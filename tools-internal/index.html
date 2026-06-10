@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUMA 内部工具 — 营销 · 广告 · 内容</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#FCB040; --cyan:#28c2e7; --blue:#0f75bc; --orange:#FF8C50;
+  --green:#3fb950; --red:#f85149; --purple:#a78bfa;
+  --card:rgba(255,255,255,0.07); --card2:rgba(255,255,255,0.12);
+  --border:rgba(255,255,255,0.12); --border2:rgba(255,255,255,0.22);
+  --text:#ffffff; --muted:#8ab4d8; --muted2:#4e7499;
+  --inset:rgba(0,0,0,0.28);
+  --r-md:16px; --r-lg:20px; --r-xl:24px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans TC','Segoe UI',system-ui,sans-serif;
+  background:linear-gradient(160deg,#0a1e3d 0%,#071428 45%,#030915 100%);
+  background-attachment:fixed;
+  min-height:100vh;color:var(--text);-webkit-font-smoothing:antialiased
+}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(5,14,35,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px}
+.logo-text{font-family:'Montserrat',sans-serif;font-weight:900;font-size:18px;background:linear-gradient(135deg,#fff 30%,var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:11px;color:var(--muted)}
+.header-badge{margin-left:auto;background:rgba(252,176,64,.15);border:1px solid rgba(252,176,64,.35);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--gold);font-weight:700;letter-spacing:.3px}
+
+/* HERO */
+.hero{padding:48px 24px 28px;text-align:center;max-width:540px;margin:0 auto}
+.hero h1{font-family:'Montserrat',sans-serif;font-weight:900;font-size:28px;line-height:1.2;margin-bottom:10px}
+.hero h1 span{background:linear-gradient(135deg,var(--cyan),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--muted);font-size:14px;line-height:1.6}
+
+/* GRID */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;padding:8px 24px 60px;max-width:1080px;margin:0 auto}
+
+.tool-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r-xl);
+  padding:24px 24px 56px;
+  cursor:pointer;
+  transition:transform .2s,background .2s,border-color .2s,box-shadow .2s;
+  position:relative;overflow:hidden;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
+}
+.tool-card:hover{transform:translateY(-4px);background:var(--card2);border-color:var(--border2);box-shadow:0 16px 48px rgba(0,0,0,.4)}
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);border-radius:var(--r-xl) var(--r-xl) 0 0}
+
+.tool-icon{font-size:30px;margin-bottom:12px;display:block}
+.tool-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.tool-card h3{font-size:17px;font-weight:700;margin-bottom:7px;color:var(--text)}
+.tool-card p{font-size:13px;color:var(--muted);line-height:1.65}
+.tool-arrow{position:absolute;bottom:18px;right:18px;width:32px;height:32px;background:color-mix(in srgb,var(--accent) 18%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:15px;transition:background .2s}
+.tool-card:hover .tool-arrow{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(3,9,21,.75);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:linear-gradient(160deg,rgba(12,26,52,.98),rgba(5,12,28,.98));border:1px solid var(--border2);border-radius:var(--r-xl);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 32px 80px rgba(0,0,0,.6)}
+.modal-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:rgba(10,20,45,.95);z-index:10;backdrop-filter:blur(12px)}
+.modal-title{font-weight:700;font-size:16px;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--muted)}
+.modal-close{margin-left:auto;background:var(--card);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:16px;transition:background .2s;flex-shrink:0}
+.modal-close:hover{background:var(--card2);color:var(--text)}
+.modal-body{padding:22px 24px 28px}
+
+/* FORM */
+.form-group{margin-bottom:18px}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+select,input[type=number],input[type=text],textarea{width:100%;background:var(--inset);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 15px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:border-color .2s;appearance:none}
+select option{background:#0a1e3d;color:#fff}
+select:focus,input:focus,textarea:focus{border-color:var(--cyan)}
+textarea{resize:vertical;min-height:110px}
+.helper{font-size:12px;color:var(--muted2);margin-top:5px;line-height:1.5}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 22px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:opacity .2s,transform .1s;width:100%}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#fff}
+.btn-gold{background:var(--gold);color:#1C1600;font-weight:900}
+.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* RESULTS */
+.result-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:18px}
+.result-card{background:var(--inset);border:1px solid var(--border);border-radius:var(--r-md);padding:14px}
+.r-label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.r-value{font-size:22px;font-weight:800;color:var(--cyan)}
+.r-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.result-card.c-gold .r-value{color:var(--gold)}
+.result-card.c-green .r-value{color:var(--green)}
+.result-card.c-yellow .r-value{color:#fde68a}
+.result-card.c-red .r-value{color:var(--red)}
+.result-card.c-purple .r-value{color:var(--purple)}
+
+/* FUNNEL */
+.funnel-bar{margin:10px 0}
+.funnel-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.funnel-track{background:var(--inset);border-radius:4px;height:9px;overflow:hidden}
+.funnel-fill{height:100%;border-radius:4px;transition:width .6s ease}
+
+/* PILLS */
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.pill{padding:6px 15px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted);transition:all .15s}
+.pill.active{background:linear-gradient(135deg,var(--cyan),var(--blue));border-color:transparent;color:#fff}
+
+/* HOOKS */
+.hook-grid{display:flex;flex-direction:column;gap:10px}
+.hook-card{background:var(--inset);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 44px 14px 14px;font-size:14px;line-height:1.65;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+.hook-card:hover{border-color:var(--gold);background:rgba(252,176,64,.06)}
+.hook-copy{position:absolute;top:10px;right:10px;font-size:11px;color:var(--muted);background:rgba(255,255,255,.08);padding:3px 8px;border-radius:8px;white-space:nowrap}
+
+/* DIVIDER + INFO */
+.divider{height:1px;background:var(--border);margin:18px 0}
+.info-box{background:rgba(40,194,231,.08);border:1px solid rgba(40,194,231,.22);border-radius:var(--r-md);padding:12px 15px;font-size:13px;color:var(--muted);margin-top:14px;line-height:1.6}
+.info-box strong{color:var(--cyan)}
+
+/* WHEEL */
+#wheelCanvas{display:block;margin:0 auto;border-radius:50%;box-shadow:0 0 40px rgba(40,194,231,.15)}
+.wheel-winner{text-align:center;padding:18px 12px 4px;font-size:22px;font-weight:900;color:var(--gold);display:none}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+@media(max-width:600px){.tools-grid{grid-template-columns:1fr}.result-grid,.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo-text">SUMA College</div>
+    <div class="logo-sub">School of Digital Marketing</div>
+  </div>
+  <div class="header-badge">🔒 Internal Tools</div>
+</header>
+
+<section class="hero">
+  <h1>内部<span>工具集</span></h1>
+  <p>营销团队专用 · 广告分析 · 内容创作 · 活动管理</p>
+</section>
+
+<div class="tools-grid">
+  <div class="tool-card" style="--accent:var(--gold)" onclick="openModal('roi')">
+    <span class="tool-icon">📊</span>
+    <span class="tool-tag">营销分析</span>
+    <h3>广告 ROI 计算器</h3>
+    <p>输入广告数据，即时计算 CPE / CPL / CPS 及各阶段转化率，颜色标注达标状态。</p>
+    <div class="tool-arrow">→</div>
+  </div>
+  <div class="tool-card" style="--accent:var(--cyan)" onclick="openModal('funnel')">
+    <span class="tool-icon">📈</span>
+    <span class="tool-tag">招生分析</span>
+    <h3>招生漏斗分析</h3>
+    <p>可视化展示从询问到入学的每阶段转化率，快速找出流失最严重的环节。</p>
+    <div class="tool-arrow">→</div>
+  </div>
+  <div class="tool-card" style="--accent:var(--orange)" onclick="openModal('hooks')">
+    <span class="tool-icon">✍️</span>
+    <span class="tool-tag">内容创作</span>
+    <h3>广告 Hook 模板库</h3>
+    <p>按平台和角度筛选，快速找到适合你内容的开场 hook，点击即可复制。</p>
+    <div class="tool-arrow">→</div>
+  </div>
+  <div class="tool-card" style="--accent:var(--purple)" onclick="openModal('wheel')">
+    <span class="tool-icon">🎡</span>
+    <span class="tool-tag">活动</span>
+    <h3>抽奖转盘</h3>
+    <p>Open Day 或课堂活动专用，输入名单一键随机抽取幸运儿。</p>
+    <div class="tool-arrow">→</div>
+  </div>
+  <div class="tool-card" style="--accent:var(--cyan);grid-column:1/-1" onclick="openDashboard()">
+    <span class="tool-icon">📡</span>
+    <span class="tool-tag">数据总览</span>
+    <h3>Ads Analytics Dashboard</h3>
+    <p>完整广告绩效仪表板 — KPI 卡片、渠道趋势图表、漏斗分析、OKR 进度追踪，一屏掌握所有数据。</p>
+    <div class="tool-arrow">⤢</div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD FULLSCREEN OVERLAY ══ -->
+<div id="dashboard-overlay" style="display:none;position:fixed;inset:0;z-index:300;background:#030915;flex-direction:column;">
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;background:rgba(5,14,35,.9);border-bottom:1px solid rgba(255,255,255,.12);flex-shrink:0">
+    <span style="font-size:18px">📡</span>
+    <span style="font-weight:700;font-size:14px;color:#fff">Ads Analytics Dashboard</span>
+    <button onclick="closeDashboard()" style="margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 16px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✕ 关闭</button>
+  </div>
+  <iframe id="dashboard-frame" src="" style="flex:1;border:none;width:100%;display:block;" allow="same-origin"></iframe>
+</div>
+
+<!-- ══ MODAL: ROI ══ -->
+<div class="modal-overlay" id="modal-roi">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:22px">📊</span>
+      <div><div class="modal-title">广告 ROI 计算器</div><div class="modal-sub">即时计算各阶段成本及转化率</div></div>
+      <button class="modal-close" onclick="closeModal('roi')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="two-col">
+        <div class="form-group"><label>广告总花费 (RM)</label><input type="number" id="roi-spend" placeholder="50000" min="0" oninput="calcROI()"></div>
+        <div class="form-group"><label>总询问数</label><input type="number" id="roi-enq" placeholder="1000" min="0" oninput="calcROI()"></div>
+        <div class="form-group"><label>优质线索 QL</label><input type="number" id="roi-ql" placeholder="80" min="0" oninput="calcROI()"></div>
+        <div class="form-group"><label>1-on-1 报名</label><input type="number" id="roi-signup" placeholder="55" min="0" oninput="calcROI()"></div>
+        <div class="form-group"><label>面试数</label><input type="number" id="roi-interview" placeholder="30" min="0" oninput="calcROI()"></div>
+        <div class="form-group"><label>成功入学学生数</label><input type="number" id="roi-students" placeholder="10" min="0" oninput="calcROI()"></div>
+      </div>
+      <div id="roi-out" style="display:none">
+        <div class="divider"></div>
+        <div class="result-grid">
+          <div class="result-card c-gold"><div class="r-label">CPE 每次询问</div><div class="r-value" id="roi-cpe">—</div></div>
+          <div class="result-card c-gold"><div class="r-label">CPL 每优质线索</div><div class="r-value" id="roi-cpl">—</div></div>
+          <div class="result-card" id="roi-cps-c"><div class="r-label">CPS 每位学生</div><div class="r-value" id="roi-cps">—</div><div class="r-sub" id="roi-cps-s"></div></div>
+          <div class="result-card c-purple"><div class="r-label">ENQ→QL</div><div class="r-value" id="roi-r1">—</div></div>
+          <div class="result-card c-purple"><div class="r-label">QL→1on1</div><div class="r-value" id="roi-r2">—</div></div>
+          <div class="result-card c-purple"><div class="r-label">面试→入学</div><div class="r-value" id="roi-r3">—</div></div>
+        </div>
+        <div class="info-box">CPS 标准：<strong style="color:var(--green)">≤RM 3,600 ✅</strong> · <strong style="color:#fde68a">RM 3,601–5,000 ⚠️</strong> · <strong style="color:var(--red)">&gt;RM 5,000 🔴</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: FUNNEL ══ -->
+<div class="modal-overlay" id="modal-funnel">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:22px">📈</span>
+      <div><div class="modal-title">招生漏斗分析</div><div class="modal-sub">可视化每阶段转化及流失</div></div>
+      <button class="modal-close" onclick="closeModal('funnel')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="two-col">
+        <div class="form-group"><label>总询问数</label><input type="number" id="fn-enq" placeholder="1000" min="0" oninput="calcFunnel()"></div>
+        <div class="form-group"><label>优质线索 QL</label><input type="number" id="fn-ql" placeholder="80" min="0" oninput="calcFunnel()"></div>
+        <div class="form-group"><label>1-on-1 报名</label><input type="number" id="fn-signup" placeholder="55" min="0" oninput="calcFunnel()"></div>
+        <div class="form-group"><label>面试数</label><input type="number" id="fn-interview" placeholder="30" min="0" oninput="calcFunnel()"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>成功入学学生数</label><input type="number" id="fn-students" placeholder="10" min="0" oninput="calcFunnel()"></div>
+      </div>
+      <div id="fn-out" style="display:none">
+        <div class="divider"></div>
+        <div id="fn-bars"></div>
+        <div class="info-box"><strong>找到流失点：</strong>转化率最低的阶段就是优先优化的环节。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: HOOKS ══ -->
+<div class="modal-overlay" id="modal-hooks">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:22px">✍️</span>
+      <div><div class="modal-title">广告 Hook 模板库</div><div class="modal-sub">点击 hook 即可复制</div></div>
+      <button class="modal-close" onclick="closeModal('hooks')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>平台</label>
+        <div class="pill-row" id="plat-pills">
+          <div class="pill active" data-v="tiktok" onclick="setPill('plat-pills',this);renderHooks()">TikTok</div>
+          <div class="pill" data-v="instagram" onclick="setPill('plat-pills',this);renderHooks()">Instagram</div>
+          <div class="pill" data-v="facebook" onclick="setPill('plat-pills',this);renderHooks()">Facebook</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>角度</label>
+        <div class="pill-row" id="angle-pills">
+          <div class="pill active" data-v="pain" onclick="setPill('angle-pills',this);renderHooks()">痛点</div>
+          <div class="pill" data-v="curiosity" onclick="setPill('angle-pills',this);renderHooks()">好奇心</div>
+          <div class="pill" data-v="proof" onclick="setPill('angle-pills',this);renderHooks()">成果见证</div>
+          <div class="pill" data-v="contrast" onclick="setPill('angle-pills',this);renderHooks()">反差对比</div>
+        </div>
+      </div>
+      <div class="hook-grid" id="hook-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: WHEEL ══ -->
+<div class="modal-overlay" id="modal-wheel">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:22px">🎡</span>
+      <div><div class="modal-title">抽奖转盘</div><div class="modal-sub">Open Day / 课堂活动专用</div></div>
+      <button class="modal-close" onclick="closeModal('wheel')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="wheel-setup">
+        <div class="form-group">
+          <label>参与者名单（每行一个名字）</label>
+          <textarea id="wheel-names" placeholder="张小明&#10;李美华&#10;Aisha&#10;Priya&#10;Jason&#10;Emily&#10;Mei Ling&#10;Daniel"></textarea>
+        </div>
+        <button class="btn btn-gold" onclick="initWheel()">🎡 建立转盘</button>
+      </div>
+      <div id="wheel-game" style="display:none">
+        <canvas id="wheelCanvas" width="280" height="280"></canvas>
+        <div style="text-align:center;margin-top:14px">
+          <button id="spin-btn" onclick="spinWheel()" style="background:var(--gold);color:#1C1600;border:none;border-radius:24px;padding:13px 0;font-size:16px;font-weight:900;font-family:inherit;cursor:pointer;width:100%">🎰 SPIN!</button>
+        </div>
+        <div class="wheel-winner" id="wheel-winner"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-ghost" onclick="resetWheel()" style="font-size:12px">← 重新输入名单</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openModal(id){document.getElementById('modal-'+id).classList.add('open');if(id==='hooks')renderHooks()}
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+function calcROI(){
+  const spend=+document.getElementById('roi-spend').value||0;
+  const enq=+document.getElementById('roi-enq').value||0;
+  const ql=+document.getElementById('roi-ql').value||0;
+  const signup=+document.getElementById('roi-signup').value||0;
+  const interview=+document.getElementById('roi-interview').value||0;
+  const students=+document.getElementById('roi-students').value||0;
+  if(!spend&&!enq) return;
+  document.getElementById('roi-out').style.display='block';
+  const rm=v=>v>0?'RM '+Math.round(v).toLocaleString():'—';
+  const pct=(a,b)=>b>0?(a/b*100).toFixed(1)+'%':'—';
+  document.getElementById('roi-cpe').textContent=rm(enq?spend/enq:0);
+  document.getElementById('roi-cpl').textContent=rm(ql?spend/ql:0);
+  const cps=students?spend/students:0;
+  document.getElementById('roi-cps').textContent=rm(cps);
+  const cc=document.getElementById('roi-cps-c');
+  const cs=document.getElementById('roi-cps-s');
+  cc.className='result-card';
+  if(cps>0){
+    if(cps<=3600){cc.classList.add('c-green');cs.textContent='✅ 达标'}
+    else if(cps<=5000){cc.classList.add('c-yellow');cs.textContent='⚠️ 超支'}
+    else{cc.classList.add('c-red');cs.textContent='🔴 过高'}
+  }
+  document.getElementById('roi-r1').textContent=pct(ql,enq);
+  document.getElementById('roi-r2').textContent=pct(signup,ql);
+  document.getElementById('roi-r3').textContent=pct(students,interview);
+}
+
+function calcFunnel(){
+  const vals=[
+    {l:'询问 Enquiry',v:+document.getElementById('fn-enq').value||0,c:'#FCB040'},
+    {l:'优质线索 QL',v:+document.getElementById('fn-ql').value||0,c:'#28c2e7'},
+    {l:'1-on-1 报名',v:+document.getElementById('fn-signup').value||0,c:'#a78bfa'},
+    {l:'面试 Interview',v:+document.getElementById('fn-interview').value||0,c:'#FF8C50'},
+    {l:'入学 Enrolled',v:+document.getElementById('fn-students').value||0,c:'#3fb950'},
+  ];
+  if(!vals[0].v) return;
+  document.getElementById('fn-out').style.display='block';
+  const max=vals[0].v;
+  document.getElementById('fn-bars').innerHTML=vals.map((s,i)=>{
+    const pct=max>0?s.v/max*100:0;
+    const conv=i>0&&vals[i-1].v>0?(s.v/vals[i-1].v*100).toFixed(1)+'%':'';
+    return `<div class="funnel-bar">
+      <div class="funnel-label"><span>${s.l} <strong style="color:${s.c}">${s.v||'—'}</strong></span>${conv?`<span style="font-size:12px;color:var(--muted)">↓ ${conv} 转化</span>`:''}</div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:${pct}%;background:${s.c}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+const HOOKS={
+  tiktok:{
+    pain:['你拿了10A SPM，然后呢？还不是要从零开始投简历？','为什么很多大学生毕业了，还是不知道怎么赚钱？','花3年读大学，出来月薪RM2,000 — 这不是你想要的吧？','你的成绩不代表你的收入，这才是真相。','如果你不懂数字营销，你在职场上会越来越难竞争。'],
+    curiosity:['马来西亚最多公司抢着要的技能是什么？不是coding…','18岁开始学这个，23岁前你可以月入过万 👇','为什么有些人读完就能接客户，大多数人却还在等通知？','一个技能，可以做广告、做内容、做品牌、做电商 — 是什么？','不需要优秀成绩，不需要大学学位，你需要的是这个 →'],
+    proof:['我们学生第一个月实习，就接到了真实客户的project ✅','她18岁，现在已经是某品牌的Social Media Manager。这是她的故事 👇','两年前他还在问"数字营销是什么"，现在他自己开了agency 🔥','学生作品集 vs 普通简历 — 哪个更容易被录取？答案很明显。'],
+    contrast:['传统大学 vs 数字营销文凭 — 选哪个？数字比较说话 📊','同样是2年，你可以拿一张理论学历，或者一个真实的作品集。','别人还在背书，他们已经在帮真实品牌做campaign了。','学校教你"应该怎样"，我们教你"实际怎样做"。'],
+  },
+  instagram:{
+    pain:['你知道吗？很多大学毕业生，第一份工作还不如蓝领薪水。','拼命读书，却不知道毕业后干什么 — 听起来很熟悉？','如果不掌握数字技能，职场竞争力会越来越弱。'],
+    curiosity:['什么技能，让你在马来西亚任何城市都能找到工作？','我们学生用作品集找工作，不用简历。为什么这样更有效？','为什么越来越多公司宁愿招实战出身的，不要名校毕业生？'],
+    proof:['看看这位学生第一年的成果 — 真实数据，不是 PS 📈','她来的时候不懂任何营销，24个月后开始接freelance case。','客户说："你的同学做的比外面很多staff还专业。"'],
+    contrast:['传统路线：读书→毕业→投简历→等结果 ⏳\n数字营销路线：边学边做→作品集→主动被找 ✅','理论 vs 实践 — 你更需要哪个，当你真正进入职场的时候？'],
+  },
+  facebook:{
+    pain:['孩子快要完成中学，不知道接下来该选什么方向？','SPM成绩普通，担心没有好出路？其实你想多了。','很多家长不知道：数字营销正在成为马来西亚最热门的职业之一。','他们花了3年读了一个没人要的学位 — 你的孩子也要走这条路吗？'],
+    curiosity:['马来西亚数字营销人才严重短缺 — 这对你的孩子意味着什么？','为什么越来越多企业宁愿招实战出身的，不要名校毕业生？','不需要考到全A，也能进入高薪行业 — 这里有一条路 👇'],
+    proof:['我们的学生，平均毕业后3个月内就业。来看看他们在做什么 →','真实案例：18岁进来，24个月后月收入过万，不是个案。'],
+    contrast:['传统大学3年：RM60,000+ · 毕业月薪RM2,200\nSUMA 2年：专业技能+作品集 · 更快就业','理论学历 vs 实战文凭 — 雇主更看重哪个？'],
+  },
+};
+let curPlat='tiktok',curAngle='pain';
+function setPill(groupId,el){
+  document.querySelectorAll(`#${groupId} .pill`).forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  if(groupId==='plat-pills') curPlat=el.dataset.v;
+  else curAngle=el.dataset.v;
+}
+function renderHooks(){
+  const hooks=(HOOKS[curPlat]||{})[curAngle]||[];
+  document.getElementById('hook-list').innerHTML=hooks.length
+    ?hooks.map(h=>`<div class="hook-card" onclick="copyHook(this,'${h.replace(/'/g,"\\'").replace(/\n/g,'\\n')}')">${h.replace(/\n/g,'<br>')}<span class="hook-copy">点击复制</span></div>`).join('')
+    :'<p style="color:var(--muted);font-size:13px">暂无模板，更多内容即将更新。</p>';
+}
+function copyHook(el,text){
+  navigator.clipboard.writeText(text.replace(/\\n/g,'\n')).then(()=>{
+    const s=el.querySelector('.hook-copy');s.textContent='✅ 已复制！';setTimeout(()=>s.textContent='点击复制',2000);
+  });
+}
+
+let wNames=[],wAngle=0,wSpinning=false;
+const WC=['#FCB040','#28c2e7','#0f75bc','#FF8C50','#3fb950','#a78bfa','#f85149','#e879f9'];
+function initWheel(){
+  const names=document.getElementById('wheel-names').value.trim().split('\n').map(n=>n.trim()).filter(Boolean);
+  if(names.length<2){alert('请输入至少 2 个名字');return}
+  wNames=names;
+  document.getElementById('wheel-setup').style.display='none';
+  document.getElementById('wheel-game').style.display='block';
+  document.getElementById('wheel-winner').style.display='none';
+  drawWheel(0);
+}
+function drawWheel(angle){
+  const canvas=document.getElementById('wheelCanvas');
+  const ctx=canvas.getContext('2d');
+  const cx=canvas.width/2,cy=canvas.height/2,r=cx-6;
+  const n=wNames.length,arc=(2*Math.PI)/n;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  wNames.forEach((name,i)=>{
+    const s=angle+i*arc,e=s+arc;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,s,e);ctx.closePath();
+    ctx.fillStyle=WC[i%WC.length];ctx.fill();
+    ctx.strokeStyle='rgba(3,9,21,.6)';ctx.lineWidth=2;ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(s+arc/2);
+    ctx.textAlign='right';ctx.fillStyle='#fff';
+    ctx.font=`bold ${Math.min(13,140/n)}px 'Noto Sans TC',sans-serif`;
+    ctx.fillText(name.length>8?name.slice(0,7)+'…':name,r-8,5);ctx.restore();
+  });
+  ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.fillStyle='rgba(10,30,61,.9)';ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx-9,2);ctx.lineTo(cx+9,2);ctx.lineTo(cx,26);ctx.closePath();ctx.fillStyle='#FCB040';ctx.fill();
+}
+function spinWheel(){
+  if(wSpinning) return;wSpinning=true;
+  document.getElementById('wheel-winner').style.display='none';
+  document.getElementById('spin-btn').disabled=true;
+  const spins=(5+Math.random()*5)*2*Math.PI,dur=4000,start=performance.now(),startAngle=wAngle;
+  function step(now){
+    const p=Math.min((now-start)/dur,1),ease=1-Math.pow(1-p,3);
+    wAngle=startAngle+spins*ease;drawWheel(wAngle);
+    if(p<1){requestAnimationFrame(step);return}
+    wSpinning=false;document.getElementById('spin-btn').disabled=false;
+    const n=wNames.length,arc=(2*Math.PI)/n;
+    const norm=((3*Math.PI/2-wAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+    const idx=Math.floor(norm/arc)%n;
+    const w=document.getElementById('wheel-winner');w.textContent='🎉 '+wNames[idx];w.style.display='block';
+  }
+  requestAnimationFrame(step);
+}
+function resetWheel(){document.getElementById('wheel-setup').style.display='block';document.getElementById('wheel-game').style.display='none'}
+
+function openDashboard(){
+  const o=document.getElementById('dashboard-overlay');
+  const f=document.getElementById('dashboard-frame');
+  if(!f.src||f.src==='about:blank'||!f.src.includes('suma-ads')){
+    f.src='./suma-ads-dashboard/';
+  }
+  o.style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeDashboard(){
+  document.getElementById('dashboard-overlay').style.display='none';
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDashboard()});
+</script>
+</body>
+</html>

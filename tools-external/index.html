@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUMA 学生工具 — 奖学金 · 学费 · 活动</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:#0f75bc; --cyan:#28c2e7; --yellow:#FCB040; --orange:#FF8C50;
+  --green:#16a34a; --red:#dc2626;
+  --bg:#F6F5F1; --bg2:#EFEEE9; --white:#FFFFFF;
+  --card:#FFFFFF; --card2:#F0EFE9;
+  --border:#E2E0DA; --border2:#D0CEC7;
+  --text:#1C1B18; --muted:#6B6860; --muted2:#9B9890;
+  --r-md:16px; --r-lg:20px; --r-xl:24px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans TC','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+/* TOPBAR */
+header{background:var(--white);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--blue),var(--cyan));border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Montserrat',sans-serif;font-weight:900;font-size:14px}
+.logo-text{font-family:'Montserrat',sans-serif;font-weight:900;font-size:17px;color:var(--blue)}
+.logo-sub{font-size:11px;color:var(--muted)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.header-cta{background:var(--yellow);color:#1C1B18;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;text-decoration:none;transition:opacity .2s}
+.header-cta:hover{opacity:.88}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--blue) 0%,#0a5fa3 50%,#054a82 100%);color:#fff;padding:52px 24px 44px;text-align:center}
+.hero-badge{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;margin-bottom:16px;letter-spacing:.5px}
+.hero h1{font-family:'Montserrat',sans-serif;font-weight:900;font-size:32px;line-height:1.2;margin-bottom:12px}
+.hero h1 span{color:var(--yellow)}
+.hero p{font-size:15px;opacity:.85;line-height:1.6;max-width:480px;margin:0 auto 24px}
+.hero-stats{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat .num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:22px;color:var(--yellow)}
+.hero-stat .label{font-size:12px;opacity:.75;margin-top:2px}
+
+/* TOOLS GRID */
+.section{padding:36px 24px 60px;max-width:1000px;margin:0 auto}
+.section-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.section-title::before{content:'';display:inline-block;width:3px;height:14px;background:linear-gradient(var(--cyan),var(--blue));border-radius:2px}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.tool-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-xl);padding:26px 24px 60px;cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;position:relative;overflow:hidden}
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--accent);border-radius:var(--r-xl) var(--r-xl) 0 0}
+.tool-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.1);border-color:var(--border2)}
+.tool-icon{font-size:32px;margin-bottom:14px;display:block}
+.tool-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+.tool-card h3{font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.tool-card p{font-size:13px;color:var(--muted);line-height:1.65}
+.tool-btn{position:absolute;bottom:20px;left:24px;right:24px;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 70%,var(--blue)));color:#fff;border:none;border-radius:12px;padding:11px 0;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .2s}
+.tool-card[style*="--accent: var(--yellow)"] .tool-btn{color:#1C1B18}
+.tool-btn:hover{opacity:.88}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(28,27,24,.5);backdrop-filter:blur(6px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border:1px solid var(--border);border-radius:var(--r-xl);width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.15)}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:var(--white);z-index:10}
+.modal-header-icon{width:40px;height:40px;background:color-mix(in srgb,var(--m-accent,var(--blue)) 12%,transparent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.modal-title{font-weight:700;font-size:16px;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.modal-close{margin-left:auto;background:var(--bg2);border:1px solid var(--border);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:16px;transition:background .2s;flex-shrink:0}
+.modal-close:hover{background:var(--border2);color:var(--text)}
+.modal-body{padding:22px 24px 28px}
+
+/* FORM */
+.form-group{margin-bottom:16px}
+label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+select,input[type=number],input[type=text],textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:border-color .2s;appearance:none}
+select:focus,input:focus,textarea:focus{border-color:var(--blue);background:var(--white)}
+textarea{resize:vertical;min-height:110px}
+.helper{font-size:12px;color:var(--muted2);margin-top:5px;line-height:1.5}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:opacity .2s,transform .1s;width:100%}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff}
+.btn-secondary{background:var(--bg2);border:1.5px solid var(--border2);color:var(--text)}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* FEE BOX */
+.fee-box{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-md);padding:14px 18px;margin-top:16px}
+.fee-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.fee-row:last-child{border-bottom:none}
+.fee-row.disc{color:var(--green);font-weight:600}
+.fee-row.final-row{font-weight:800;font-size:17px;color:var(--blue);padding-top:12px;border-top:2px solid var(--border2);margin-top:4px}
+
+/* RESULT GRID */
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.result-card{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-md);padding:14px}
+.r-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.r-value{font-size:22px;font-weight:800;color:var(--blue)}
+
+/* INFO BOX */
+.info-box{background:color-mix(in srgb,var(--blue) 7%,transparent);border:1.5px solid color-mix(in srgb,var(--blue) 20%,transparent);border-radius:var(--r-md);padding:12px 15px;font-size:13px;color:var(--muted);margin-top:14px;line-height:1.6}
+.info-box strong{color:var(--blue)}
+.divider{height:1px;background:var(--border);margin:18px 0}
+
+/* WHEEL */
+#wheelCanvas{display:block;margin:0 auto;border-radius:50%;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.wheel-winner{text-align:center;padding:18px 12px 4px;font-size:22px;font-weight:900;color:var(--blue);display:none}
+
+/* FOOTER */
+footer{background:var(--blue);color:rgba(255,255,255,.7);text-align:center;padding:24px;font-size:13px;margin-top:40px}
+footer strong{color:#fff}
+footer a{color:var(--yellow);text-decoration:none}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@media(max-width:600px){.tools-grid{grid-template-columns:1fr}.result-grid{grid-template-columns:1fr}.hero h1{font-size:26px}.hero-stats{gap:20px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-icon">S</div>
+    <div>
+      <div class="logo-text">SUMA College</div>
+      <div class="logo-sub">School of Digital Marketing</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <a href="https://suma.edu.my" class="header-cta" target="_blank">📋 预约面试</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-badge">✨ 免费使用 · 无需登录</div>
+  <h1>一切你想了解的<br><span>就在这里算清楚</span></h1>
+  <p>奖学金资格、学费规划、一站式计算。马来西亚数字营销文凭，两年改变你的职业轨迹。</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">24个月</div><div class="label">UK Diploma 课程</div></div>
+    <div class="hero-stat"><div class="num">RM 10K</div><div class="label">最高奖学金</div></div>
+    <div class="hero-stat"><div class="num">80%</div><div class="label">实战课程比例</div></div>
+    <div class="hero-stat"><div class="num">9大</div><div class="label">数字营销模块</div></div>
+  </div>
+</section>
+
+<div class="section">
+  <div class="section-title">学生工具</div>
+  <div class="tools-grid">
+
+    <div class="tool-card" style="--accent:var(--blue)" onclick="openModal('sch')">
+      <span class="tool-icon">🎓</span>
+      <span class="tool-tag">奖学金</span>
+      <h3>奖学金计算器</h3>
+      <p>输入你的 SPM / UEC / STPM 成绩，即时知道你能申请多少奖学金，以及最终实付学费。</p>
+      <button class="tool-btn">立即计算 →</button>
+    </div>
+
+    <div class="tool-card" style="--accent:var(--cyan)" onclick="openModal('fee')">
+      <span class="tool-icon">💰</span>
+      <span class="tool-tag">学费规划</span>
+      <h3>学费分期规划师</h3>
+      <p>看看减去助学金和奖学金后，你每个月实际需要付多少。清楚规划，没有惊喜。</p>
+      <button class="tool-btn">查看分期 →</button>
+    </div>
+
+    <div class="tool-card" style="--accent:var(--yellow)" onclick="openModal('wheel')">
+      <span class="tool-icon">🎡</span>
+      <span class="tool-tag">活动专用</span>
+      <h3>抽奖转盘</h3>
+      <p>Open Day 或课堂活动专用抽奖工具，输入名单一键随机抽出幸运赢家。</p>
+      <button class="tool-btn" style="color:#1C1B18">开始抽奖 →</button>
+    </div>
+
+  </div>
+
+  <!-- CTA STRIP -->
+  <div style="margin-top:32px;background:linear-gradient(135deg,var(--blue),#0a5fa3);border-radius:var(--r-xl);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:18px;color:#fff;margin-bottom:4px">准备好了？预约免费入学面试</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.75)">面试考察热情与潜力，无需优秀成绩。通过即可确认奖学金资格。</div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <a href="https://api.whatsapp.com/send?phone=60111099834" target="_blank" style="background:var(--yellow);color:#1C1B18;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap">📱 WhatsApp 咨询</a>
+      <a href="https://suma.edu.my" target="_blank" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap">了解更多 →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: SCHOLARSHIP ══ -->
+<div class="modal-overlay" id="modal-sch">
+  <div class="modal">
+    <div class="modal-header" style="--m-accent:var(--blue)">
+      <div class="modal-header-icon">🎓</div>
+      <div><div class="modal-title">奖学金计算器</div><div class="modal-sub">Academic Excellence + Young Leaders Scholarship</div></div>
+      <button class="modal-close" onclick="closeModal('sch')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>学历类型 &amp; 成绩</label>
+        <select id="sch-qual" onchange="calcSch()">
+          <option value="">— 请选择你的学历 —</option>
+          <optgroup label="SPM / IGCSE">
+            <option value="6000">6–7 科 A → 奖学金 RM 6,000</option>
+            <option value="8000">8 科或以上 A → 奖学金 RM 8,000</option>
+            <option value="0">少于 6 科 A → 不符合学术奖学金</option>
+          </optgroup>
+          <optgroup label="UEC（5 科分数点总和）">
+            <option value="10000">5–10 分 → 奖学金 RM 10,000</option>
+            <option value="8000">11–15 分 → 奖学金 RM 8,000</option>
+            <option value="6000">16–20 分 → 奖学金 RM 6,000</option>
+            <option value="0">21 分以上 → 不符合</option>
+          </optgroup>
+          <optgroup label="STPM / A-Level">
+            <option value="10000">3 科或以上 A → 奖学金 RM 10,000</option>
+            <option value="8000">2 科 A → 奖学金 RM 8,000</option>
+            <option value="0">1 科 A 或以下 → 不符合</option>
+          </optgroup>
+          <option value="0">无相关学历 / 其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>青年领袖职位（如有）</label>
+        <select id="sch-leader" onchange="calcSch()">
+          <option value="0">无 / 不申请</option>
+          <option value="1500">President / Vice President — RM 1,500</option>
+          <option value="1000">Secretary / Treasurer / Group Leader — RM 1,000</option>
+          <option value="500">Committee Member（附证明）— RM 500</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>MIDM 助学金</label>
+        <select id="sch-midm" onchange="calcSch()">
+          <option value="12200">申请（首 25 位面试成功学生，RM 12,200）</option>
+          <option value="0">不确定 / 不申请</option>
+        </select>
+        <div class="helper">⚠️ MIDM 名额有限，先到先得，须通过入学评估方可获得</div>
+      </div>
+
+      <div id="sch-result" style="display:none">
+        <div class="divider"></div>
+        <div class="fee-box">
+          <div class="fee-row"><span>课程原价</span><span style="font-weight:600">RM 52,000</span></div>
+          <div class="fee-row disc" id="r-midm-row"><span>🎁 MIDM 助学金</span><span id="r-midm">—</span></div>
+          <div class="fee-row disc" id="r-acad-row"><span>🏆 学术奖学金</span><span id="r-acad">—</span></div>
+          <div class="fee-row disc" id="r-leader-row"><span>👑 青年领袖奖学金</span><span id="r-leader">—</span></div>
+          <div class="fee-row" style="color:var(--muted);font-size:12px"><span>押金（毕业后 100% 退还）</span><span>+ RM 4,000</span></div>
+          <div class="fee-row final-row"><span>💙 实付总额</span><span id="r-total">—</span></div>
+          <div class="fee-row" style="border:none;padding-top:6px"><span style="color:var(--muted)">每期（8 学期）</span><span id="r-sem" style="color:var(--cyan);font-weight:700">—</span></div>
+          <div class="fee-row" style="border:none"><span style="color:var(--muted)">每月（24 个月）</span><span id="r-month" style="color:var(--cyan);font-weight:700">—</span></div>
+        </div>
+        <div class="info-box">
+          准备好了？<strong>立即预约免费入学面试确认奖学金资格</strong><br>
+          📱 <strong>011-110 99834</strong> &nbsp;·&nbsp; <a href="https://suma.edu.my" target="_blank" style="color:var(--blue)">suma.edu.my</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: FEE ══ -->
+<div class="modal-overlay" id="modal-fee">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-icon" style="background:color-mix(in srgb,var(--cyan) 12%,transparent)">💰</div>
+      <div><div class="modal-title">学费分期规划师</div><div class="modal-sub">24-Month UK Diploma in Digital Marketing</div></div>
+      <button class="modal-close" onclick="closeModal('fee')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>MIDM 助学金</label>
+        <select id="fee-midm" onchange="calcFee()">
+          <option value="12200">已获得（首 25 位，RM 12,200）</option>
+          <option value="0">未获得 / 不确定</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>奖学金总额 (RM)</label>
+        <input type="number" id="fee-sch" placeholder="0" min="0" max="11500" oninput="calcFee()">
+        <div class="helper">学术奖学金最高 RM 10,000 + 领袖奖学金最高 RM 1,500（不确定就用上面的奖学金计算器先算）</div>
+      </div>
+      <div class="fee-box">
+        <div class="fee-row"><span>课程原价</span><span style="font-weight:600">RM 52,000</span></div>
+        <div class="fee-row disc" id="fp-midm-row"><span>🎁 MIDM 助学金</span><span id="fp-midm">−RM 12,200</span></div>
+        <div class="fee-row disc" id="fp-sch-row" style="display:none"><span>🏆 奖学金</span><span id="fp-sch">—</span></div>
+        <div class="fee-row" style="color:var(--muted);font-size:12px"><span>押金（完成课程全额退还）</span><span>+ RM 4,000</span></div>
+        <div class="fee-row final-row"><span>💙 实付总额</span><span id="fp-total">RM 39,800</span></div>
+      </div>
+      <div class="result-grid">
+        <div class="result-card" style="border-color:color-mix(in srgb,var(--blue) 25%,transparent)">
+          <div class="r-label">每期（8 学期）</div>
+          <div class="r-value" id="fp-sem" style="color:var(--blue)">RM 4,975</div>
+        </div>
+        <div class="result-card" style="border-color:color-mix(in srgb,var(--cyan) 30%,transparent)">
+          <div class="r-label">每月（24 个月）</div>
+          <div class="r-value" id="fp-month" style="color:var(--cyan)">RM 1,658</div>
+        </div>
+      </div>
+      <div class="info-box" style="margin-top:14px">
+        学费已含：行政费、教材、作品集、考试费、所有软件订阅费。<br>
+        押金 RM 4,000 完成课程后 <strong>100% 退还</strong>。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: WHEEL ══ -->
+<div class="modal-overlay" id="modal-wheel">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-icon" style="background:color-mix(in srgb,var(--yellow) 15%,transparent)">🎡</div>
+      <div><div class="modal-title">抽奖转盘</div><div class="modal-sub">Open Day / 课堂活动专用</div></div>
+      <button class="modal-close" onclick="closeModal('wheel')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="wheel-setup">
+        <div class="form-group">
+          <label>参与者名单（每行一个名字）</label>
+          <textarea id="wheel-names" placeholder="张小明&#10;李美华&#10;Aisha&#10;Priya&#10;Jason&#10;Emily&#10;Mei Ling&#10;Daniel"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="initWheel()">🎡 建立转盘</button>
+      </div>
+      <div id="wheel-game" style="display:none">
+        <canvas id="wheelCanvas" width="280" height="280"></canvas>
+        <div style="text-align:center;margin-top:16px">
+          <button id="spin-btn" onclick="spinWheel()" style="background:var(--yellow);color:#1C1B18;border:none;border-radius:14px;padding:14px 48px;font-size:16px;font-weight:900;font-family:inherit;cursor:pointer;width:100%">🎰 SPIN!</button>
+        </div>
+        <div class="wheel-winner" id="wheel-winner"></div>
+        <div style="text-align:center;margin-top:12px">
+          <button class="btn btn-secondary" onclick="resetWheel()" style="font-size:12px">← 重新输入名单</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <strong>SUMA College</strong> — School of Digital Marketing<br>
+  A-1-9 &amp; A-2-9, Sunway Nexis, Kota Damansara · <a href="tel:+60111099834">011-110 99834</a> · <a href="https://suma.edu.my">suma.edu.my</a>
+</footer>
+
+<script>
+function openModal(id){document.getElementById('modal-'+id).classList.add('open')}
+function closeModal(id){document.getElementById('modal-'+id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+function calcSch(){
+  const acad=parseInt(document.getElementById('sch-qual').value)||0;
+  const leader=parseInt(document.getElementById('sch-leader').value)||0;
+  const midm=parseInt(document.getElementById('sch-midm').value)||0;
+  if(!document.getElementById('sch-qual').value) return;
+  const total=Math.max(52000-midm-acad-leader,0);
+  document.getElementById('sch-result').style.display='block';
+  const show=(rowId,amtId,v)=>{
+    document.getElementById(rowId).style.display=v>0?'flex':'none';
+    if(v>0) document.getElementById(amtId).textContent=`−RM ${v.toLocaleString()}`;
+  };
+  show('r-midm-row','r-midm',midm);
+  show('r-acad-row','r-acad',acad);
+  show('r-leader-row','r-leader',leader);
+  document.getElementById('r-total').textContent=`RM ${total.toLocaleString()}`;
+  document.getElementById('r-sem').textContent=`RM ${Math.round(total/8).toLocaleString()}`;
+  document.getElementById('r-month').textContent=`RM ${Math.round(total/24).toLocaleString()} / 月`;
+}
+
+function calcFee(){
+  const midm=parseInt(document.getElementById('fee-midm').value)||0;
+  const sch=parseFloat(document.getElementById('fee-sch').value)||0;
+  const total=Math.max(52000-midm-sch,0);
+  document.getElementById('fp-midm-row').style.display=midm>0?'flex':'none';
+  if(midm>0) document.getElementById('fp-midm').textContent=`−RM ${midm.toLocaleString()}`;
+  const schRow=document.getElementById('fp-sch-row');
+  schRow.style.display=sch>0?'flex':'none';
+  if(sch>0) document.getElementById('fp-sch').textContent=`−RM ${sch.toLocaleString()}`;
+  document.getElementById('fp-total').textContent=`RM ${total.toLocaleString()}`;
+  document.getElementById('fp-sem').textContent=`RM ${Math.round(total/8).toLocaleString()}`;
+  document.getElementById('fp-month').textContent=`RM ${Math.round(total/24).toLocaleString()} / 月`;
+}
+calcFee();
+
+let wNames=[],wAngle=0,wSpinning=false;
+const WC=['#0f75bc','#28c2e7','#FCB040','#FF8C50','#16a34a','#a855f7','#dc2626','#f97316'];
+function initWheel(){
+  const names=document.getElementById('wheel-names').value.trim().split('\n').map(n=>n.trim()).filter(Boolean);
+  if(names.length<2){alert('请输入至少 2 个名字');return}
+  wNames=names;
+  document.getElementById('wheel-setup').style.display='none';
+  document.getElementById('wheel-game').style.display='block';
+  document.getElementById('wheel-winner').style.display='none';
+  drawWheel(0);
+}
+function drawWheel(angle){
+  const canvas=document.getElementById('wheelCanvas');
+  const ctx=canvas.getContext('2d');
+  const cx=canvas.width/2,cy=canvas.height/2,r=cx-6;
+  const n=wNames.length,arc=(2*Math.PI)/n;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  wNames.forEach((name,i)=>{
+    const s=angle+i*arc,e=s+arc;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,s,e);ctx.closePath();
+    ctx.fillStyle=WC[i%WC.length];ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(s+arc/2);
+    ctx.textAlign='right';ctx.fillStyle='#fff';
+    ctx.font=`bold ${Math.min(13,140/n)}px 'Noto Sans TC',sans-serif`;
+    ctx.fillText(name.length>8?name.slice(0,7)+'…':name,r-8,5);ctx.restore();
+  });
+  ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
+  ctx.beginPath();ctx.moveTo(cx-9,2);ctx.lineTo(cx+9,2);ctx.lineTo(cx,26);ctx.closePath();ctx.fillStyle='#FCB040';ctx.fill();
+}
+function spinWheel(){
+  if(wSpinning) return;
+  wSpinning=true;
+  document.getElementById('wheel-winner').style.display='none';
+  document.getElementById('spin-btn').disabled=true;
+  const spins=(5+Math.random()*5)*2*Math.PI,dur=4000,start=performance.now(),startAngle=wAngle;
+  function step(now){
+    const p=Math.min((now-start)/dur,1),ease=1-Math.pow(1-p,3);
+    wAngle=startAngle+spins*ease;drawWheel(wAngle);
+    if(p<1){requestAnimationFrame(step);return}
+    wSpinning=false;document.getElementById('spin-btn').disabled=false;
+    const n=wNames.length,arc=(2*Math.PI)/n;
+    const norm=((3*Math.PI/2-wAngle)%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+    const idx=Math.floor(norm/arc)%n;
+    const w=document.getElementById('wheel-winner');
+    w.textContent='🎉 '+wNames[idx];w.style.display='block';
+  }
+  requestAnimationFrame(step);
+}
+function resetWheel(){
+  document.getElementById('wheel-setup').style.display='block';
+  document.getElementById('wheel-game').style.display='none';
+}
+</script>
+</body>
+</html>
