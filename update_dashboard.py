@@ -33,6 +33,7 @@ warnings.filterwarnings("ignore")
 # ─────────────────────────────────────────────────────────────────────────────
 
 FY26_SHEET_ID = "1JHulpfu2gEkBXadX-tZJYxBEr2ffru3TguVqbjA6J9E"  # Oct 2025 – ongoing
+OKR_SHEET_ID  = "1SV17QnwH0yl7D30itznyh6VKH0L-I7CXFo__PplyBxI"   # 03 SUMA All Team Quarter OKR
 # FY25_SHEET_ID = "1NCxLbz8zvPYz2Ezh17zz9XEa0neMintnPnDYbJ_soX0"  # Historical, not changed
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/{id}/export?format=xlsx"
@@ -427,13 +428,130 @@ def patch_raw(html: str, ch_data: dict) -> str:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# STEP 5b — Parse OKR sheet → milestone targets per quarter
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Maps text in OKR sheet → dashboard quarter key
+OKR_QUARTER_MAP = {
+    '25Q4': 'Objectives (25Q4)',
+    '26Q1': 'Objectives (26Q1)',
+    '26Q2': 'Objectives (26Q2)',
+    '26Q3': 'Objectives (26Q3)',
+}
+OKR_MILESTONE_ROWS = {
+    'M3': 'M3',
+    'M2': 'M2',
+    'M1': 'M1',
+    'M0': 'M0',
+}
+
+def parse_okr_sheet(wb) -> dict:
+    """
+    Read '03 SUMA All Team Quarter OKR' tab.
+    Returns:
+      { quarter_key: { 'M3': {ql, int, paid}, 'M2': {...}, 'M1': {...}, 'M0': {...} } }
+
+    Sheet structure:
+      - Section header rows: col[1] contains "M3 ：", "M2 ：", "M1 ：", "M0 ："
+      - Quarter rows within each section: col[1] contains "Objectives (26Q2)" etc.
+        col[2]=paid, col[5]=interview, col[7]=quality_leads
+    """
+    tab = next((t for t in wb.sheetnames if '03 SUMA All Team' in t), None)
+    if not tab:
+        log("  WARN: OKR tab '03 SUMA All Team Quarter OKR' not found")
+        return {}
+
+    ws = wb[tab]
+    result = {}   # { qtr_key: { milestone: {ql, int, paid} } }
+
+    cur_milestone = None
+
+    for row in range(1, ws.max_row + 1):
+        c1 = str(ws.cell(row=row, column=1).value or '').strip()
+
+        # Detect milestone section header (e.g. "M3 ：80")
+        for ms in ('M3', 'M2', 'M1', 'M0'):
+            if c1.startswith(ms):
+                cur_milestone = ms
+                break
+
+        if not cur_milestone:
+            continue
+
+        # Detect quarter row within section (e.g. "Objectives (26Q2)\n\nApril to June")
+        for qkey, qfrag in OKR_QUARTER_MAP.items():
+            if qfrag in c1:
+                paid = int(round(num(ws.cell(row=row, column=2).value)))
+                intn = int(round(num(ws.cell(row=row, column=5).value)))
+                ql   = int(round(num(ws.cell(row=row, column=7).value)))
+                if qkey not in result:
+                    result[qkey] = {}
+                result[qkey][cur_milestone] = {'ql': ql, 'int': intn, 'paid': paid}
+                log(f"  OKR {qkey} {cur_milestone}: ql={ql}, int={intn}, paid={paid}")
+                break
+
+    return result
+
+
+def patch_okr(html: str, okr: dict) -> str:
+    """
+    Update kpi:{} and milestones:[...] inside each QUARTERS['xxQx'] block.
+    Leaves actuals, label, intake, startIdx, endIdx, dataNote, closed untouched.
+    """
+    MS_COLORS = {'M3': '#f85149', 'M2': '#fcb040', 'M1': '#28c2e7', 'M0': '#3fb950'}
+    MS_LABELS = {'M3': 'Minimum', 'M2': "Target ⭐", 'M1': '', 'M0': 'Stretch'}
+
+    for qkey, milestones in okr.items():
+        if len(milestones) < 4:
+            log(f"  WARN: OKR {qkey} incomplete ({len(milestones)} milestones), skipping")
+            continue
+
+        m2 = milestones.get('M2', {})
+        if not m2:
+            continue
+
+        # Find the quarter block start
+        pos = html.find(f"'{qkey}':")
+        if pos == -1:
+            pos = html.find(f'"{qkey}":')
+        if pos == -1:
+            continue
+
+        window = html[pos: pos + 1500]
+
+        # 1. Update kpi:{...}
+        new_kpi = f"kpi:{{ ql:{m2['ql']}, int:{m2['int']}, paid:{m2['paid']} }}"
+        window = re.sub(r'kpi:\s*\{[^}]+\}', new_kpi, window, count=1)
+
+        # 2. Update milestones:[...]
+        ms_lines = []
+        for level in ('M3', 'M2', 'M1', 'M0'):
+            d = milestones.get(level)
+            if not d:
+                continue
+            lbl = MS_LABELS[level].replace("'", "\\'")
+            color = MS_COLORS[level]
+            ms_lines.append(
+                f"      {{level:'{level}', label:'{lbl}', "
+                f"ql:{d['ql']}, int:{d['int']}, paid:{d['paid']}, color:'{color}'}}"
+            )
+        new_ms = "milestones:[\n" + ",\n".join(ms_lines) + ",\n    ]"
+        window = re.sub(r'milestones:\s*\[.*?\]', new_ms, window, count=1, flags=re.DOTALL)
+
+        html = html[:pos] + window + html[pos + 1500:]
+        log(f"  ✅ OKR patched: {qkey}")
+
+    return html
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # STEP 6 — Git push
 # ─────────────────────────────────────────────────────────────────────────────
 
 def git_push():
     today = datetime.now().strftime("%b %d, %Y")
     for cmd in [
-        ["git", "-C", str(REPO_DIR), "add", "index.html"],
+        ["git", "-C", str(REPO_DIR), "add", "tools-internal/suma-ads-dashboard/index.html"],
         ["git", "-C", str(REPO_DIR), "commit", "-m", f"Auto-update: {today}"],
         ["git", "-C", str(REPO_DIR), "push",   "origin", "main"],
     ]:
@@ -504,6 +622,18 @@ def main():
         log(traceback.format_exc())
         fy26_verified = {}
 
+    # ── Download + parse OKR sheet ────────────────────────────────────────────
+    okr_data = {}
+    try:
+        log(f"Downloading OKR sheet…")
+        okr_raw = download_sheet(OKR_SHEET_ID)
+        okr_wb  = open_wb(okr_raw)
+        okr_data = parse_okr_sheet(okr_wb)
+        log(f"  Parsed OKR for {len(okr_data)} quarters")
+    except Exception as e:
+        log(f"  ERROR downloading/parsing OKR sheet: {e}")
+        log(traceback.format_exc())
+
     # ── Compute Q2 actuals ────────────────────────────────────────────────────
     actuals = compute_q2_actuals(ch_data)
     log(f"  Q2 actuals: ql={actuals['ql']}, int={actuals['int']}, paid={actuals['paid']}")
@@ -540,7 +670,21 @@ def main():
             log(f"  ERROR patching VERIFIED: {e}")
             log(traceback.format_exc())
 
-    # 3. Update Q2 actuals
+    # 3. Update OKR milestone targets from OKR sheet
+    if okr_data:
+        try:
+            new_html = patch_okr(html, okr_data)
+            if new_html != html:
+                html    = new_html
+                changed = True
+                log("  ✅ OKR milestones updated")
+            else:
+                log("  OKR milestones unchanged")
+        except Exception as e:
+            log(f"  ERROR patching OKR: {e}")
+            log(traceback.format_exc())
+
+    # 4. Update Q2 actuals
     try:
         new_html = patch_q2_actuals(html, actuals)
         if new_html != html:
