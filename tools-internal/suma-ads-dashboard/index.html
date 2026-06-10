@@ -505,7 +505,7 @@ tr:hover td{background:rgba(255,255,255,.025);}
     </div>
     <div class="obj-card">
       <div class="obj-header">
-        <div class="obj-label" style="color:var(--green);">🎓 Paid · Oct Intake</div>
+        <div class="obj-label" style="color:var(--green);" id="ok-o3-label">🎓 Paid · Oct Intake</div>
         <div class="obj-pct" id="ok-o3-pct" style="color:var(--green);">—</div>
       </div>
       <div class="obj-meta">actual <strong id="ok-o3-cur">—</strong> / <span id="ok-o3-tgt">—</span> M2 target</div>
@@ -1012,6 +1012,8 @@ function renderOKR(){
   document.getElementById('ok-data-note').textContent = Q.dataNote;
   document.getElementById('ok-ms-title').textContent =
     `${Q.closed ? 'Results vs' : 'Gap to Each'} Milestone · ${intakeLabel}`;
+  const intakeShort = intakeLabel.replace('October','Oct').replace(/\s*20\d\d/,'');
+  document.getElementById('ok-o3-label').textContent = `🎓 Paid · ${intakeShort}`;
   document.getElementById('ok-kj-warning').style.display = Q.closed ? 'none' : 'inline-block';
 
   // Dim past-quarter buttons, highlight active
