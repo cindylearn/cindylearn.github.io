@@ -596,6 +596,9 @@ tr:hover td{background:rgba(255,255,255,.025);}
   <!-- Funnel Summary Bar -->
   <div id="funnelBar" style="display:flex;gap:0;padding:14px 20px 0;overflow-x:auto;"></div>
 
+  <!-- Unit Economics strip (ROAS / CPA / Revenue) -->
+  <div id="econStrip" style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 20px 0;"></div>
+
   <!-- Summary Cards -->
   <div class="daily-summary" id="dailySummary"></div>
 
@@ -1467,6 +1470,14 @@ const FUNNEL_META = [
   { label:"🎓 Paid",           key:"paid",     idx:5, color:"#facc15", unit:"",   fmt:(v)=>v.toLocaleString(),                                          type:"bar"  },
 ];
 
+// ── Unit economics (UK Diploma) ──
+const DIPLOMA_PRICE = 39800;   // gross tuition (RM)
+const MACBOOK_COST  = 4200;    // free MacBook gift (RM)
+const NET_REV       = 36000;   // net revenue per paid student (RM)
+const CPA_TARGET    = 3600;    // target cost per paid student ≤ 10% of net rev
+const ROAS_TARGET   = NET_REV / CPA_TARGET;  // = 10×
+const rmFmt = (v)=> "RM "+Math.round(v).toLocaleString("en-MY");
+
 const CH_LABELS = {"Lead Magnet":"Lead Magnet","VSL":"VSL","Open Day":"Open Day","Google Ads":"Google","Youtube":"YouTube","Trial Class":"Trial Class","Road Show":"Road Show","School Fair":"School Fair","XHS":"XHS","KOL":"KOL"};
 
 const MONTHLY_2026 = {
@@ -1531,6 +1542,25 @@ function renderDaily(){
       ${i>0?`<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:4px;"><div style="width:${pct}%;height:4px;background:${f.color};border-radius:2px;opacity:.7;"></div></div>`:''}
     </div>`;
   }).join('<div style="width:1px;background:var(--border);align-self:stretch;"></div>');
+
+  // ── Unit Economics strip (ROAS / CPA / Revenue) ──
+  const eSpend = totals[0], ePaid = totals[5];
+  const eRev   = ePaid * NET_REV;
+  const eRoas  = eSpend>0 ? eRev/eSpend : 0;
+  const eCpa   = ePaid>0 ? eSpend/ePaid : 0;
+  const roasOK = eRoas >= ROAS_TARGET;
+  const cpaOK  = ePaid>0 && eCpa <= CPA_TARGET;
+  const okC="#34d399", badC="#f87171", neutral="#8ab4d8";
+  const eCard=(label,val,sub,color)=>`<div style="flex:1;min-width:150px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
+      <div style="font-size:10px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">${label}</div>
+      <div style="font-size:20px;font-weight:800;color:${color};margin-top:2px;">${val}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:1px;">${sub}</div>
+    </div>`;
+  document.getElementById("econStrip").innerHTML =
+    eCard("💵 Revenue (net)", rmFmt(eRev), `${ePaid} paid × RM 36,000`, neutral)
+  + eCard("📈 ROAS", eRoas>0 ? eRoas.toFixed(1)+"×" : "—", `target ≥ ${ROAS_TARGET}× ${eRoas>0?(roasOK?"✅":"⚠️"):""}`, eRoas>0?(roasOK?okC:badC):neutral)
+  + eCard("🎯 CPA / paid", ePaid>0 ? rmFmt(eCpa) : "—", `target ≤ RM 3,600 ${ePaid>0?(cpaOK?"✅":"⚠️"):""}`, ePaid>0?(cpaOK?okC:badC):neutral)
+  + eCard("🧾 Cost basis", "RM 39,800", "− MacBook RM 4,200 = RM 36k net", "var(--muted)");
 
   // ── Main chart series: daily for Spend/Enquiry, monthly for QL/Signup/Interview/Paid ──
   let labels, mainVals, chartType;
