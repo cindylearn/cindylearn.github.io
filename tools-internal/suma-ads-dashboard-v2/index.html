@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 :root {
   /* ── Brand colours (SUMA) ── */
@@ -984,6 +985,9 @@ function renderAll(){
   }).join('');
 }
 
+// Register datalabels but OFF by default (opt-in per chart only on Daily-tab bar charts)
+if(window.ChartDataLabels){ try{ Chart.register(window.ChartDataLabels); }catch(e){} Chart.defaults.set('plugins.datalabels', {display:false}); }
+
 initCharts();
 renderAll();
 
@@ -1575,15 +1579,34 @@ function renderDaily(){
       borderWidth: chartType==="line" ? 1.5 : 1,
       borderRadius: chartType==="bar" && !isDaily ? 4 : 0,
       pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: fm.color,
+      pointHoverBorderColor: "#fff",
       tension: .3,
       fill: chartType==="line"
     }]},
     options:{
       responsive:true, maintainAspectRatio:true,
-      plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#ccc",borderColor:"rgba(255,255,255,.1)",borderWidth:1,callbacks:{label:(ctx)=>` ${fm.fmt(ctx.parsed.y)}`}}},
+      interaction:{ mode:"index", intersect:false },   // hover anywhere on a date → tooltip
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#7fd1ff",borderColor:"rgba(255,255,255,.15)",borderWidth:1,padding:10,titleFont:{size:12},bodyFont:{size:14,weight:"700"},callbacks:{label:(ctx)=>` ${fm.fmt(ctx.parsed.y)}`}},
+        // monthly bars (≤9): label every bar. daily line (273 pts): label only the peak point.
+        datalabels: isDaily ? {
+          display:(ctx)=>{ const d=ctx.dataset.data; return d.length && ctx.dataIndex===d.indexOf(Math.max(...d)); },
+          anchor:"end", align:"top", offset:4,
+          color: fm.color, font:{size:12,weight:"700"},
+          formatter:(v)=> "▲ "+fm.fmt(v)
+        } : {
+          display:(ctx)=> ctx.dataset.data[ctx.dataIndex] > 0,
+          anchor:"end", align:"top", offset:2,
+          color: fm.color, font:{size:12,weight:"700"},
+          formatter:(v)=> fm.fmt(v)
+        }
+      },
       scales:{
         x:{ticks:{color:"#4e7499",font:{size: isDaily?9:13},maxRotation:45},grid:{color:"rgba(255,255,255,.04)"}},
-        y:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}}
+        y:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}},
       }
     }
   });
@@ -1613,7 +1636,17 @@ function renderDaily(){
     options:{
       indexAxis:"y",
       responsive:true, maintainAspectRatio:true,
-      plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#ccc",borderColor:"rgba(255,255,255,.1)",borderWidth:1,callbacks:{label:(ctx)=>` ${fm.fmt(ctx.parsed.x)}`}}},
+      layout:{ padding:{ right: 54 } },   // room for value labels at bar ends
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#7fd1ff",borderColor:"rgba(255,255,255,.15)",borderWidth:1,bodyFont:{size:13,weight:"700"},callbacks:{label:(ctx)=>` ${fm.fmt(ctx.parsed.x)}`}},
+        datalabels:{
+          display:(ctx)=> ctx.dataset.data[ctx.dataIndex] > 0,
+          anchor:"end", align:"right", offset:4,
+          color:"#cfe3f5", font:{size:11,weight:"700"},
+          formatter:(v)=> fm.fmt(v)
+        }
+      },
       scales:{
         x:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}},
         y:{ticks:{color:"#8ab4d8",font:{size:11}},grid:{display:false}}
