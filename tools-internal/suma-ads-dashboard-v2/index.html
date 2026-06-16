@@ -544,7 +544,7 @@ tr:hover td{background:rgba(255,255,255,.025);}
 <!-- ══════════ TAB: DAILY DATA ══════════ -->
 <div id="tab-daily" style="display:none;">
 
-  <!-- Controls -->
+  <!-- Controls row 1: Month + Channel -->
   <div class="daily-controls">
     <span class="daily-label">Month</span>
     <div class="pill-group" id="monthPills">
@@ -572,22 +572,30 @@ tr:hover td{background:rgba(255,255,255,.025);}
     </div>
   </div>
 
+  <!-- Controls row 2: Funnel Stage -->
+  <div class="daily-controls" style="border-top:1px solid var(--border);padding-top:10px;">
+    <span class="daily-label">Funnel</span>
+    <div class="pill-group" id="funnelPills">
+      <button class="pill active" data-fi="0" style="--pc:#FCB040">💰 Spend</button>
+      <button class="pill" data-fi="1" style="--pc:#28c2e7">📥 Enquiry</button>
+      <button class="pill" data-fi="2" style="--pc:#34d399">⭐ Quality Leads</button>
+      <button class="pill" data-fi="3" style="--pc:#a78bfa">🎤 Signup / 1-on-1</button>
+      <button class="pill" data-fi="4" style="--pc:#60a5fa">📋 Interview</button>
+      <button class="pill" data-fi="5" style="--pc:#facc15">🎓 Paid</button>
+    </div>
+  </div>
+
+  <!-- Funnel Summary Bar -->
+  <div id="funnelBar" style="display:flex;gap:0;padding:14px 20px 0;overflow-x:auto;"></div>
+
   <!-- Summary Cards -->
   <div class="daily-summary" id="dailySummary"></div>
 
-  <!-- Charts -->
+  <!-- Main Chart -->
   <div class="daily-charts">
     <div class="daily-chart-box" style="grid-column:1/-1">
-      <h4>Daily Ad Spend (RM)</h4>
-      <canvas id="chartDailySpend" height="90"></canvas>
-    </div>
-    <div class="daily-chart-box">
-      <h4>Daily Enquiry / Leads</h4>
-      <canvas id="chartDailyLeads" height="130"></canvas>
-    </div>
-    <div class="daily-chart-box">
-      <h4>Daily Quality Leads</h4>
-      <canvas id="chartDailyQL" height="130"></canvas>
+      <h4 id="mainChartTitle">Daily Ad Spend (RM)</h4>
+      <canvas id="chartDailyMain" height="90"></canvas>
     </div>
   </div>
 
@@ -1343,10 +1351,18 @@ const DAILY_2026 = {
 
 // ═══════════════ DAILY DATA ═══════════════
 const DAILY_CHANNELS = ["Lead Magnet","VSL","Open Day","Google Ads","Youtube","Trial Class","Road Show","School Fair","XHS","KOL"];
-const CH_COLORS = ["#FCB040","#28c2e7","#a78bfa","#34d399","#f87171","#fb923c","#60a5fa","#e879f9","#4ade80","#facc15"];
 
-let dailyMonth = "all", dailyChannel = "all";
-let chartSpend = null, chartLeads = null, chartQL = null;
+const FUNNEL_META = [
+  { label:"💰 Spend",          key:"spend",    idx:0, color:"#FCB040", unit:"RM", fmt:(v)=>"RM "+v.toLocaleString("en-MY",{maximumFractionDigits:0}), type:"line" },
+  { label:"📥 Enquiry",        key:"leads",    idx:1, color:"#28c2e7", unit:"",   fmt:(v)=>v.toLocaleString(),                                          type:"bar"  },
+  { label:"⭐ Quality Leads",  key:"ql",       idx:2, color:"#34d399", unit:"",   fmt:(v)=>v.toLocaleString(),                                          type:"bar"  },
+  { label:"🎤 Signup / 1-on-1",key:"signup",   idx:3, color:"#a78bfa", unit:"",   fmt:(v)=>v.toLocaleString(),                                          type:"bar"  },
+  { label:"📋 Interview",      key:"interview",idx:4, color:"#60a5fa", unit:"",   fmt:(v)=>v.toLocaleString(),                                          type:"bar"  },
+  { label:"🎓 Paid",           key:"paid",     idx:5, color:"#facc15", unit:"",   fmt:(v)=>v.toLocaleString(),                                          type:"bar"  },
+];
+
+let dailyMonth = "all", dailyChannel = "all", dailyFunnel = 0;
+let chartMain = null;
 let dailyInited = false;
 
 function filterDaily(){
@@ -1358,64 +1374,91 @@ function filterDaily(){
   return { dates, channels };
 }
 
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
 function renderDaily(){
   if(!dailyInited){ initDailyPills(); dailyInited=true; }
   const { dates, channels } = filterDaily();
+  const fm = FUNNEL_META[dailyFunnel];
 
-  // Compute per-date totals
-  const spend=[], leads=[], ql=[];
-  let tSpend=0, tLeads=0, tQL=0;
+  // Compute totals for all 6 funnel stages (for funnel bar)
+  const totals = [0,0,0,0,0,0];
+  const mainVals = [];
+
   dates.forEach(d=>{
     const day = DAILY_2026[d]||{};
-    let s=0,l=0,q=0;
-    channels.forEach(ch=>{ const v=day[ch]||[0,0,0,0,0,0]; s+=v[0]; l+=v[1]; q+=v[2]; });
-    spend.push(parseFloat(s.toFixed(2)));
-    leads.push(parseFloat(l.toFixed(0)));
-    ql.push(parseFloat(q.toFixed(0)));
-    tSpend+=s; tLeads+=l; tQL+=q;
+    const perStage = [0,0,0,0,0,0];
+    channels.forEach(ch=>{
+      const v=day[ch]||[0,0,0,0,0,0];
+      for(let i=0;i<6;i++) perStage[i]+=v[i];
+    });
+    for(let i=0;i<6;i++) totals[i]+=perStage[i];
+    mainVals.push(parseFloat(perStage[fm.idx].toFixed(fm.idx===0?2:0)));
   });
 
-  // Summary cards
-  const avgSpend = dates.length ? tSpend/dates.length : 0;
-  const bestDay = dates.length ? dates[spend.indexOf(Math.max(...spend))] : "-";
+  // ── Funnel bar ──
+  const fbar = document.getElementById("funnelBar");
+  const fLabels = ["Spend","Enquiry","Quality Leads","Signup","Interview","Paid"];
+  const fColors = FUNNEL_META.map(f=>f.color);
+  const maxVal = Math.max(...totals.slice(1)) || 1;
+  fbar.innerHTML = FUNNEL_META.map((f,i)=>{
+    const pct = i===0 ? 100 : Math.round(totals[i]/maxVal*100);
+    const isActive = i===dailyFunnel;
+    return `<div onclick="setFunnel(${i})" style="flex:1;min-width:90px;cursor:pointer;padding:10px 14px;border-bottom:3px solid ${isActive?f.color:'transparent'};background:${isActive?'rgba(255,255,255,.05)':'transparent'};transition:.15s;">
+      <div style="font-size:10px;color:${f.color};font-weight:700;text-transform:uppercase;letter-spacing:.05em;">${f.label}</div>
+      <div style="font-size:18px;font-weight:700;color:${isActive?f.color:'#fff'};margin:4px 0;">${f.fmt(totals[i])}</div>
+      ${i>0?`<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:4px;"><div style="width:${pct}%;height:4px;background:${f.color};border-radius:2px;opacity:.7;"></div></div>`:''}
+    </div>`;
+  }).join('<div style="width:1px;background:var(--border);align-self:stretch;"></div>');
+
+  // ── Summary cards for selected stage ──
+  const total = totals[fm.idx];
+  const avg = dates.length ? total/dates.length : 0;
+  const maxIdx = mainVals.indexOf(Math.max(...mainVals));
+  const bestDay = dates[maxIdx] || "-";
   document.getElementById("dailySummary").innerHTML = `
-    <div class="ds-card"><div class="ds-val" style="color:var(--yellow)">RM ${tSpend.toLocaleString("en-MY",{minimumFractionDigits:0,maximumFractionDigits:0})}</div><div class="ds-lbl">Total Ad Spend</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:var(--blue)">${tLeads.toLocaleString()}</div><div class="ds-lbl">Total Enquiry / Leads</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:var(--green)">${tQL.toLocaleString()}</div><div class="ds-lbl">Total Quality Leads</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:var(--orange)">RM ${avgSpend.toLocaleString("en-MY",{minimumFractionDigits:0,maximumFractionDigits:0})}</div><div class="ds-lbl">Avg Daily Spend</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:var(--muted);font-size:14px;">${bestDay}</div><div class="ds-lbl">Highest Spend Day</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(total)}</div><div class="ds-lbl">Total ${fLabels[fm.idx]}</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(avg)}</div><div class="ds-lbl">Daily Avg</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(Math.max(...mainVals))}</div><div class="ds-lbl">Best Day</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:var(--muted);font-size:14px;">${bestDay}</div><div class="ds-lbl">Best Day Date</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:var(--muted2)">${dates.length}</div><div class="ds-lbl">Days in Range</div></div>
   `;
 
-  const labels = dates.map(d=>d.slice(5)); // MM-DD
-  const chartOpts = (color)=>({
-    responsive:true, maintainAspectRatio:true,
-    plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#ccc",borderColor:"rgba(255,255,255,.1)",borderWidth:1}},
-    scales:{x:{ticks:{color:"#4e7499",font:{size:9},maxRotation:45},grid:{color:"rgba(255,255,255,.04)"}},y:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}}}
+  // ── Main chart ──
+  document.getElementById("mainChartTitle").textContent = `Daily ${fLabels[fm.idx]}${fm.unit?' ('+fm.unit+')':''}`;
+  const labels = dates.map(d=>d.slice(5));
+  const rgb = hexToRgb(fm.color);
+  if(chartMain) chartMain.destroy();
+  chartMain = new Chart(document.getElementById("chartDailyMain"),{
+    type: fm.type,
+    data:{ labels, datasets:[{
+      label: fLabels[fm.idx],
+      data: mainVals,
+      borderColor: fm.color,
+      backgroundColor: fm.type==="line" ? `rgba(${rgb},.08)` : `rgba(${rgb},.5)`,
+      borderWidth: fm.type==="line" ? 1.5 : 1,
+      pointRadius: 0,
+      tension: .3,
+      fill: fm.type==="line"
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#ccc",borderColor:"rgba(255,255,255,.1)",borderWidth:1,callbacks:{label:(ctx)=>` ${fm.unit?'RM ':''} ${ctx.parsed.y.toLocaleString()}`}}},
+      scales:{
+        x:{ticks:{color:"#4e7499",font:{size:9},maxRotation:45},grid:{color:"rgba(255,255,255,.04)"}},
+        y:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}}
+      }
+    }
   });
+}
 
-  // Spend chart
-  if(chartSpend) chartSpend.destroy();
-  chartSpend = new Chart(document.getElementById("chartDailySpend"),{
-    type:"line",
-    data:{ labels, datasets:[{label:"Spend (RM)",data:spend,borderColor:"#FCB040",backgroundColor:"rgba(252,176,64,.08)",borderWidth:1.5,pointRadius:0,tension:.3,fill:true}]},
-    options: chartOpts("#FCB040")
-  });
-
-  // Leads chart
-  if(chartLeads) chartLeads.destroy();
-  chartLeads = new Chart(document.getElementById("chartDailyLeads"),{
-    type:"bar",
-    data:{ labels, datasets:[{label:"Leads",data:leads,backgroundColor:"rgba(40,194,231,.5)",borderColor:"#28c2e7",borderWidth:1}]},
-    options: chartOpts("#28c2e7")
-  });
-
-  // QL chart
-  if(chartQL) chartQL.destroy();
-  chartQL = new Chart(document.getElementById("chartDailyQL"),{
-    type:"bar",
-    data:{ labels, datasets:[{label:"Quality Leads",data:ql,backgroundColor:"rgba(52,211,153,.5)",borderColor:"#34d399",borderWidth:1}]},
-    options: chartOpts("#34d399")
-  });
+function setFunnel(idx){
+  dailyFunnel = idx;
+  document.querySelectorAll("#funnelPills .pill").forEach((b,i)=>b.classList.toggle("active",i===idx));
+  renderDaily();
 }
 
 function initDailyPills(){
@@ -1434,6 +1477,9 @@ function initDailyPills(){
       dailyChannel = btn.dataset.ch;
       renderDaily();
     });
+  });
+  document.querySelectorAll("#funnelPills .pill").forEach((btn,i)=>{
+    btn.addEventListener("click",()=>setFunnel(i));
   });
 }
 
