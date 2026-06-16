@@ -597,6 +597,10 @@ tr:hover td{background:rgba(255,255,255,.025);}
       <h4 id="mainChartTitle">Daily Ad Spend (RM)</h4>
       <canvas id="chartDailyMain" height="90"></canvas>
     </div>
+    <div class="daily-chart-box" style="grid-column:1/-1">
+      <h4 id="byChannelTitle">By Channel · Total Spend</h4>
+      <canvas id="chartByChannel" height="60"></canvas>
+    </div>
   </div>
 
 </div><!-- /tab-daily -->
@@ -1361,8 +1365,10 @@ const FUNNEL_META = [
   { label:"🎓 Paid",           key:"paid",     idx:5, color:"#facc15", unit:"",   fmt:(v)=>v.toLocaleString(),                                          type:"bar"  },
 ];
 
+const CH_LABELS = {"Lead Magnet":"Lead Magnet","VSL":"VSL","Open Day":"Open Day","Google Ads":"Google","Youtube":"YouTube","Trial Class":"Trial Class","Road Show":"Road Show","School Fair":"School Fair","XHS":"XHS","KOL":"KOL"};
+
 let dailyMonth = "all", dailyChannel = "all", dailyFunnel = 0;
-let chartMain = null;
+let chartMain = null, chartByCh = null;
 let dailyInited = false;
 
 function filterDaily(){
@@ -1450,6 +1456,39 @@ function renderDaily(){
       scales:{
         x:{ticks:{color:"#4e7499",font:{size:9},maxRotation:45},grid:{color:"rgba(255,255,255,.04)"}},
         y:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}}
+      }
+    }
+  });
+
+  // ── By Channel breakdown (always all 10 channels, respects month filter) ──
+  const chTotals = DAILY_CHANNELS.map(ch=>{
+    let sum=0;
+    dates.forEach(d=>{ const v=(DAILY_2026[d]||{})[ch]||[0,0,0,0,0,0]; sum+=v[fm.idx]; });
+    return { ch, val: parseFloat(sum.toFixed(fm.idx===0?2:0)) };
+  }).sort((a,b)=>b.val-a.val);
+
+  document.getElementById("byChannelTitle").textContent = `By Channel · Total ${fLabels[fm.idx]}${fm.unit?' ('+fm.unit+')':''}`;
+  if(chartByCh) chartByCh.destroy();
+  chartByCh = new Chart(document.getElementById("chartByChannel"),{
+    type:"bar",
+    data:{
+      labels: chTotals.map(c=>CH_LABELS[c.ch]),
+      datasets:[{
+        label: fLabels[fm.idx],
+        data: chTotals.map(c=>c.val),
+        backgroundColor: chTotals.map(c=>c.ch===dailyChannel ? fm.color : `rgba(${rgb},.45)`),
+        borderColor: fm.color,
+        borderWidth: chTotals.map(c=>c.ch===dailyChannel ? 2 : 1),
+        borderRadius: 4
+      }]
+    },
+    options:{
+      indexAxis:"y",
+      responsive:true, maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#ccc",borderColor:"rgba(255,255,255,.1)",borderWidth:1,callbacks:{label:(ctx)=>` ${fm.fmt(ctx.parsed.x)}`}}},
+      scales:{
+        x:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}},
+        y:{ticks:{color:"#8ab4d8",font:{size:11}},grid:{display:false}}
       }
     }
   });
