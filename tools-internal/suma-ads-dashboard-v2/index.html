@@ -1382,11 +1382,11 @@ const MONTHLY_2026 = {
 const MONTH_KEYS = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06"];
 const MONTH_SHORT = {"2026-01":"Jan","2026-02":"Feb","2026-03":"Mar","2026-04":"Apr","2026-05":"May","2026-06":"Jun"};
 
-let dailyMonth = "all", dailyChannel = "all", dailyFunnel = 0;
+let dailyMonth = "all", dailySel = new Set(), dailyFunnel = 0;  // dailySel empty = all channels
 let chartMain = null, chartByCh = null;
 let dailyInited = false;
 
-function selChannels(){ return dailyChannel === "all" ? DAILY_CHANNELS : [dailyChannel]; }
+function selChannels(){ return dailySel.size===0 ? DAILY_CHANNELS : DAILY_CHANNELS.filter(c=>dailySel.has(c)); }
 function selMonths(){ return dailyMonth === "all" ? MONTH_KEYS : MONTH_KEYS.filter(mk=>parseInt(mk.split("-")[1])===parseInt(dailyMonth)); }
 function selDates(){ return Object.keys(DAILY_2026).filter(d=> dailyMonth==="all" || parseInt(d.split("-")[1])===parseInt(dailyMonth)).sort(); }
 
@@ -1510,9 +1510,9 @@ function renderDaily(){
       datasets:[{
         label: fLabels[fm.idx],
         data: chTotals.map(c=>c.val),
-        backgroundColor: chTotals.map(c=>c.ch===dailyChannel ? fm.color : `rgba(${rgb},.45)`),
+        backgroundColor: chTotals.map(c=>dailySel.has(c.ch) ? fm.color : `rgba(${rgb},.45)`),
         borderColor: fm.color,
-        borderWidth: chTotals.map(c=>c.ch===dailyChannel ? 2 : 1),
+        borderWidth: chTotals.map(c=>dailySel.has(c.ch) ? 2 : 1),
         borderRadius: 4
       }]
     },
@@ -1545,9 +1545,19 @@ function initDailyPills(){
   });
   document.querySelectorAll("#chPills .pill").forEach(btn=>{
     btn.addEventListener("click",()=>{
-      document.querySelectorAll("#chPills .pill").forEach(b=>b.classList.remove("active"));
-      btn.classList.add("active");
-      dailyChannel = btn.dataset.ch;
+      const ch = btn.dataset.ch;
+      if(ch === "all"){
+        dailySel.clear();                                   // All = clear selection
+      } else if(dailySel.has(ch)){
+        dailySel.delete(ch);                                // toggle off
+      } else {
+        dailySel.add(ch);                                   // toggle on (multi)
+      }
+      // sync active states: All active only when nothing selected
+      document.querySelectorAll("#chPills .pill").forEach(b=>{
+        const c=b.dataset.ch;
+        b.classList.toggle("active", c==="all" ? dailySel.size===0 : dailySel.has(c));
+      });
       renderDaily();
     });
   });
