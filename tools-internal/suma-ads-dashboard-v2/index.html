@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUMA College — Ads Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  /* ── Brand colours (SUMA) ── */
+  --blue:#0f75bc; --cyan:#28c2e7; --yellow:#FCB040;
+  --green:#3fb950; --red:#f85149; --purple:#a78bfa; --orange:#FF8C50;
+
+  /* ── Blue gradient palette ── */
+  --dark:#030915;
+  --dark2:rgba(5,14,35,.95);
+  --card:rgba(255,255,255,.07);
+  --card2:rgba(255,255,255,.12);
+  --border:rgba(255,255,255,.12);
+  --border2:rgba(255,255,255,.22);
+  --text:#ffffff;
+  --muted:#8ab4d8;
+  --muted2:#4e7499;
+
+  /* ── Radius ── */
+  --r-sm:10px; --r-md:16px; --r-lg:20px; --r-xl:24px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:linear-gradient(160deg,#0a1e3d 0%,#071428 45%,#030915 100%);
+  background-attachment:fixed;
+  color:var(--text);
+  font-family:'Noto Sans TC','Segoe UI',system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ═══════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════ */
+.topbar{
+  background:rgba(5,14,35,.85);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+  display:flex;align-items:center;height:58px;gap:16px;
+  position:sticky;top:0;z-index:100;
+}
+.logo{
+  font-size:15px;font-weight:800;letter-spacing:-.3px;
+  background:linear-gradient(135deg, var(--cyan) 0%, var(--yellow) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo small{
+  font-size:11px;font-weight:500;letter-spacing:.2px;
+  background:none;-webkit-text-fill-color:var(--muted);color:var(--muted);
+  margin-left:8px;
+}
+.topbar-spacer{flex:1;}
+
+/* ── Tab nav ── */
+.tab-nav{display:flex;gap:6px;background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:4px;}
+.tab-btn{
+  background:transparent;border:none;color:var(--muted);
+  padding:6px 18px;border-radius:10px;
+  font-size:12px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.tab-btn:hover{color:var(--text);background:rgba(255,255,255,.05);}
+.tab-btn.active{
+  background:linear-gradient(135deg,rgba(40,194,231,.2),rgba(246,178,60,.15));
+  color:var(--cyan);
+  box-shadow:0 1px 8px rgba(40,194,231,.15);
+}
+
+/* ═══════════════════════════════════════
+   FILTER BAR
+═══════════════════════════════════════ */
+.filterbar{
+  background:rgba(8,18,42,.88);
+  border-bottom:1px solid var(--border);
+  padding:12px 28px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.filter-label{font-size:11px;color:var(--muted2);font-weight:700;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;}
+.date-range-group{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:6px 14px;
+}
+.date-range-group select{
+  background:transparent;border:none;color:var(--text);
+  font-size:13px;font-weight:500;font-family:inherit;
+  cursor:pointer;outline:none;padding:2px 4px;
+}
+.date-range-group select option{background:#0a1e3d;color:var(--text);}
+.date-sep{color:var(--muted2);font-size:12px;}
+.presets{display:flex;gap:5px;flex-wrap:wrap;}
+.preset-btn{
+  background:var(--card);border:1px solid var(--border);color:var(--muted);
+  padding:5px 14px;border-radius:20px;
+  font-size:11px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.preset-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(40,194,231,.06);}
+.preset-btn.active{
+  background:rgba(40,194,231,.12);border-color:var(--cyan);color:var(--cyan);
+  box-shadow:0 0 0 1px rgba(40,194,231,.2);
+}
+.filter-info{
+  margin-left:auto;font-size:11px;color:var(--muted);
+  background:var(--card);border:1px solid var(--border);
+  padding:4px 14px;border-radius:20px;white-space:nowrap;
+}
+.filter-info span{color:var(--cyan);font-weight:700;}
+
+/* ═══════════════════════════════════════
+   PAGE
+═══════════════════════════════════════ */
+.page{padding:22px 28px;}
+
+/* ═══════════════════════════════════════
+   KPI CARDS
+═══════════════════════════════════════ */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
+.kpi-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--r-lg);
+  padding:18px 18px 16px;
+  position:relative;overflow:hidden;
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+  cursor:default;
+}
+.kpi-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 12px 40px rgba(0,0,0,.4);
+  border-color:var(--border2);
+}
+/* coloured left stripe */
+.kpi-card::before{
+  content:'';position:absolute;top:18px;left:0;bottom:18px;width:3px;
+  border-radius:0 3px 3px 0;
+}
+.c-cyan::before{background:var(--cyan);}
+.c-yellow::before{background:var(--yellow);}
+.c-blue::before{background:var(--blue);}
+.c-green::before{background:var(--green);}
+.c-red::before{background:var(--red);}
+.c-purple::before{background:var(--purple);}
+/* subtle glow tint on hover by color */
+.c-cyan:hover{background:rgba(40,194,231,.10);}
+.c-yellow:hover{background:rgba(252,176,64,.10);}
+.c-green:hover{background:rgba(63,185,80,.10);}
+.c-blue:hover{background:rgba(15,117,188,.10);}
+
+.kpi-icon{font-size:18px;margin-bottom:6px;display:block;}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;font-weight:600;}
+.kpi-value{font-size:26px;font-weight:800;line-height:1.1;letter-spacing:-.5px;}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:5px;}
+
+/* ═══════════════════════════════════════
+   SECTION TITLE
+═══════════════════════════════════════ */
+.section-title{
+  font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1.2px;
+  margin-bottom:10px;margin-top:4px;padding-left:2px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::before{
+  content:'';display:inline-block;width:3px;height:14px;
+  background:linear-gradient(var(--cyan),var(--yellow));
+  border-radius:2px;
+}
+
+/* ═══════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════ */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.chart-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:20px 22px;
+  transition:border-color .2s, box-shadow .2s;
+}
+.chart-card:hover{border-color:var(--border2);box-shadow:0 8px 32px rgba(0,0,0,.3);}
+.chart-title{
+  font-size:11px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.6px;
+  margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.chart-title .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ═══════════════════════════════════════
+   FUNNEL
+═══════════════════════════════════════ */
+.funnel-container{display:flex;flex-direction:column;gap:8px;}
+.funnel-row{display:flex;align-items:center;gap:10px;}
+.funnel-label{font-size:11px;color:var(--muted);width:90px;text-align:right;flex-shrink:0;}
+.funnel-bar-wrap{flex:1;background:rgba(255,255,255,.04);border-radius:6px;height:32px;overflow:hidden;}
+.funnel-bar{
+  height:100%;display:flex;align-items:center;padding-left:12px;
+  border-radius:6px;font-size:13px;font-weight:700;
+  transition:width .6s cubic-bezier(.4,0,.2,1);
+}
+.funnel-meta{font-size:10px;color:var(--muted);min-width:95px;}
+
+/* ═══════════════════════════════════════
+   TABLE
+═══════════════════════════════════════ */
+.table-wrap{overflow-x:auto;border-radius:var(--r-lg);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:680px;}
+th{
+  background:var(--card2);color:var(--muted);
+  padding:10px 14px;text-align:left;
+  font-size:10px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;
+  border-bottom:1px solid var(--border);
+}
+td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.025);}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+.tag-good{background:rgba(63,185,80,.15);color:var(--green);}
+.tag-warn{background:rgba(246,178,60,.15);color:var(--yellow);}
+.tag-bad{background:rgba(248,81,73,.15);color:var(--red);}
+
+.legend-row{font-size:11px;color:var(--muted);margin-bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+
+/* ═══════════════════════════════════════
+   OKR PAGE
+═══════════════════════════════════════ */
+.okr-page{padding:22px 28px;}
+.okr-topbar{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;}
+.okr-top-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:16px 18px;
+  text-align:center;position:relative;overflow:hidden;
+  transition:transform .2s, box-shadow .2s;
+}
+.okr-top-card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.35);}
+.okr-top-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+}
+.ot-days::before{background:linear-gradient(90deg,var(--cyan),var(--blue));}
+.ot-kpi::before{background:var(--red);}
+.ot-roas::before{background:linear-gradient(90deg,var(--yellow),var(--orange));}
+.ot-base::before{background:var(--blue);}
+.ot-goal::before{background:linear-gradient(90deg,var(--green),var(--cyan));}
+.okr-top-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.9px;margin-bottom:8px;font-weight:600;}
+.okr-top-value{font-size:30px;font-weight:900;line-height:1.1;letter-spacing:-.5px;}
+.okr-top-sub{font-size:10px;color:var(--muted);margin-top:6px;}
+
+/* ── Quarter selector ── */
+.quarter-nav{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.qtr-btn{
+  background:var(--card);border:1px solid var(--border);color:var(--muted);
+  padding:7px 18px;border-radius:20px;
+  font-size:12px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.qtr-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.qtr-btn.active{
+  background:linear-gradient(135deg,rgba(40,194,231,.18),rgba(246,178,60,.10));
+  border-color:var(--cyan);color:var(--cyan);
+  box-shadow:0 0 0 1px rgba(40,194,231,.15);
+}
+
+/* ── Progress bars ── */
+.progress-wrap{background:rgba(255,255,255,.05);border-radius:8px;height:10px;margin:10px 0 4px;overflow:hidden;}
+.progress-bar{height:10px;border-radius:8px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.obj-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:18px 22px;
+  transition:border-color .2s;
+}
+.obj-card:hover{border-color:var(--border2);}
+.obj-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+.obj-label{font-size:12px;font-weight:700;letter-spacing:.1px;}
+.obj-pct{font-size:24px;font-weight:900;letter-spacing:-.5px;}
+.obj-meta{font-size:11px;color:var(--muted);}
+.obj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+
+/* ── Milestone tracker ── */
+.ms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.ms-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--r-lg);padding:16px;text-align:center;
+  transition:all .25s;
+}
+.ms-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.35);}
+.ms-card.achieved{border-color:var(--green);background:rgba(63,185,80,.06);}
+.ms-card.on-track{border-color:var(--yellow);background:rgba(246,178,60,.06);}
+.ms-level{font-size:26px;font-weight:900;margin-bottom:3px;letter-spacing:-.5px;}
+.ms-tag{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  padding:3px 10px;border-radius:20px;margin-bottom:10px;display:inline-block;
+}
+.ms-row{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.6;}
+.ms-row strong{color:var(--text);}
+
+/* ── Closed/Result badge ── */
+.q1-badge{
+  background:rgba(63,185,80,.08);
+  border:1px solid rgba(63,185,80,.3);
+  border-radius:var(--r-md);padding:16px 22px;
+  display:flex;align-items:center;gap:14px;margin-bottom:20px;
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media(max-width:900px){
+  .grid-2{grid-template-columns:1fr;}
+  .topbar,.filterbar,.page,.okr-page{padding-left:16px;padding-right:16px;}
+  .ms-grid{grid-template-columns:1fr 1fr;}
+  .okr-topbar{grid-template-columns:1fr 1fr;}
+  .obj-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="logo">SUMA College <small>School of Digital Marketing</small></div>
+  <div class="topbar-spacer"></div>
+  <div class="tab-nav">
+    <button class="tab-btn active" id="btn-ads" onclick="showTab('ads')">📊 Ads Performance</button>
+    <button class="tab-btn" id="btn-okr" onclick="showTab('okr')">🎯 OKR Tracker</button>
+  </div>
+</div>
+
+<div id="tab-ads">
+<!-- Filter Bar -->
+<div class="filterbar">
+  <div class="filter-label">📅 Date Range</div>
+  <div class="date-range-group">
+    <select id="fromMonth" onchange="applyFilter()">
+      <option value="0">Oct 2024</option><option value="1">Nov 2024</option>
+      <option value="2">Dec 2024</option><option value="3">Jan 2025</option>
+      <option value="4">Feb 2025</option><option value="5">Mar 2025</option>
+      <option value="6">Apr 2025</option><option value="7">May 2025</option>
+      <option value="8">Jun 2025</option><option value="9">Jul 2025</option>
+      <option value="10">Aug 2025</option><option value="11">Sep 2025</option>
+      <option value="12">Oct 2025</option><option value="13">Nov 2025</option>
+      <option value="14">Dec 2025</option><option value="15">Jan 2026</option>
+      <option value="16">Feb 2026</option><option value="17">Mar 2026</option>
+      <option value="18">Apr 2026</option><option value="19">May 2026</option>
+    </select>
+    <span class="date-sep">→</span>
+    <select id="toMonth" onchange="applyFilter()">
+      <option value="0">Oct 2024</option><option value="1">Nov 2024</option>
+      <option value="2">Dec 2024</option><option value="3">Jan 2025</option>
+      <option value="4">Feb 2025</option><option value="5">Mar 2025</option>
+      <option value="6">Apr 2025</option><option value="7">May 2025</option>
+      <option value="8">Jun 2025</option><option value="9">Jul 2025</option>
+      <option value="10">Aug 2025</option><option value="11">Sep 2025</option>
+      <option value="12">Oct 2025</option><option value="13">Nov 2025</option>
+      <option value="14">Dec 2025</option><option value="15">Jan 2026</option>
+      <option value="16">Feb 2026</option><option value="17">Mar 2026</option>
+      <option value="18">Apr 2026</option><option value="19" selected>May 2026</option>
+    </select>
+  </div>
+  <div class="presets">
+    <button class="preset-btn" onclick="setPreset(0,11,this)">FY2025</button>
+    <button class="preset-btn active" onclick="setPreset(12,19,this)">FY2026 YTD</button>
+    <button class="preset-btn" onclick="setPreset(0,19,this)">All Time</button>
+    <button class="preset-btn" onclick="setPreset(14,19,this)">Last 6M</button>
+    <button class="preset-btn" onclick="setPreset(17,19,this)">Last 3M</button>
+  </div>
+  <div class="filter-info">Showing: <span id="filterText">FY2026 YTD (8 months)</span></div>
+</div>
+
+<!-- Page -->
+<div class="page">
+
+  <div class="section-title">Key Metrics</div>
+  <div class="kpi-grid">
+    <div class="kpi-card c-cyan"><div class="kpi-icon">💰</div><div class="kpi-label">Total Ad Spend</div><div class="kpi-value" id="k-spend" style="color:var(--cyan)">—</div><div class="kpi-sub" id="k-spend-s">—</div></div>
+    <div class="kpi-card c-yellow"><div class="kpi-icon">📥</div><div class="kpi-label">Total Enquiries</div><div class="kpi-value" id="k-enq" style="color:var(--yellow)">—</div><div class="kpi-sub" id="k-enq-s">—</div></div>
+    <div class="kpi-card c-blue"><div class="kpi-icon">⭐</div><div class="kpi-label">Quality Leads</div><div class="kpi-value" id="k-ql" style="color:var(--blue)">—</div><div class="kpi-sub" id="k-ql-s">—</div></div>
+    <div class="kpi-card c-blue"><div class="kpi-icon">🤝</div><div class="kpi-label">1-on-1 Sign Ups</div><div class="kpi-value" id="k-1o1" style="color:#7dd3fc">—</div><div class="kpi-sub" id="k-1o1-s">—</div></div>
+    <div class="kpi-card c-purple"><div class="kpi-icon">🎤</div><div class="kpi-label">Interviews</div><div class="kpi-value" id="k-int" style="color:var(--purple)">—</div><div class="kpi-sub" id="k-int-s">—</div></div>
+    <div class="kpi-card c-green"><div class="kpi-icon">🎓</div><div class="kpi-label">Students Enrolled</div><div class="kpi-value" id="k-stu" style="color:var(--green)">—</div><div class="kpi-sub" id="k-stu-s">—</div></div>
+    <div class="kpi-card c-yellow"><div class="kpi-icon">📊</div><div class="kpi-label">Enq → Quality %</div><div class="kpi-value" id="k-r1" style="color:var(--yellow)">—</div><div class="kpi-sub">Enquiry quality rate</div></div>
+    <div class="kpi-card c-green"><div class="kpi-icon">✅</div><div class="kpi-label">Quality → 1on1 %</div><div class="kpi-value" id="k-r2" style="color:var(--green)">—</div><div class="kpi-sub">Show-up rate</div></div>
+    <div class="kpi-card c-purple"><div class="kpi-icon">🎯</div><div class="kpi-label">1on1 → Interview %</div><div class="kpi-value" id="k-r3" style="color:var(--purple)">—</div><div class="kpi-sub">Interview conversion</div></div>
+    <div class="kpi-card c-red"><div class="kpi-icon">🏆</div><div class="kpi-label">Interview → Enrolled %</div><div class="kpi-value" id="k-r4" style="color:var(--red)">—</div><div class="kpi-sub">Close rate</div></div>
+  </div>
+
+  <div class="section-title" style="margin-top:14px;">Cost Per Stage</div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px;">
+    <div class="kpi-card c-yellow"><div class="kpi-icon">📥</div><div class="kpi-label">Cost per Enquiry</div><div class="kpi-value" id="k-cpe" style="color:var(--yellow)">—</div><div class="kpi-sub">CPE</div></div>
+    <div class="kpi-card c-blue"><div class="kpi-icon">⭐</div><div class="kpi-label">Cost per Quality Lead</div><div class="kpi-value" id="k-cpl" style="color:var(--blue)">—</div><div class="kpi-sub">CPL</div></div>
+    <div class="kpi-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;"><div style="position:absolute;top:0;left:0;right:0;height:3px;border-radius:10px 10px 0 0;background:#7dd3fc;"></div><div class="kpi-icon">🤝</div><div class="kpi-label">Cost per 1-on-1 Sign Up</div><div class="kpi-value" id="k-c1o1" style="color:#7dd3fc">—</div><div class="kpi-sub">Show-up cost</div></div>
+    <div class="kpi-card c-purple"><div class="kpi-icon">🎤</div><div class="kpi-label">Cost per Interview</div><div class="kpi-value" id="k-cint" style="color:var(--purple)">—</div><div class="kpi-sub">Per interview lead</div></div>
+    <div class="kpi-card c-green"><div class="kpi-icon">🎓</div><div class="kpi-label">Cost per Student</div><div class="kpi-value" id="k-cstu" style="color:var(--green)">—</div><div class="kpi-sub">CPS · Target ≤ RM3,600</div></div>
+  </div>
+
+  <div class="section-title" style="margin-top:6px;">Trends</div>
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--cyan)"></span>Monthly Ad Spend by Channel (RM)</div><canvas id="chartSpend" height="210"></canvas></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--yellow)"></span>Monthly Enquiries by Channel</div><canvas id="chartEnq" height="210"></canvas></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--green)"></span>Sales Funnel (Selected Period)</div><div class="funnel-container" id="funnelEl" style="padding:8px 0;"></div></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--blue)"></span>Year-over-Year — Full Fiscal Year</div><canvas id="chartYoY" height="210"></canvas></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--red)"></span>Cost Per Quality Lead by Channel (RM)</div><canvas id="chartCPL" height="210"></canvas></div>
+    <div class="chart-card"><div class="chart-title"><span class="dot" style="background:var(--yellow)"></span>Spend Distribution by Channel</div><canvas id="chartPie" height="210"></canvas></div>
+  </div>
+
+  <div class="section-title" style="margin-top:4px;">Channel Performance Detail</div>
+  <div class="chart-card">
+    <div class="legend-row">
+      <span>Rating basis: <strong style="color:var(--text)">CPS (Cost Per Student)</strong></span>
+      <span><span class="tag tag-good">✅ On Target</span> CPS ≤ RM 3,600</span>
+      <span><span class="tag tag-warn">⚠️ Over Budget</span> RM 3,601–5,000</span>
+      <span><span class="tag tag-bad">🔴 Too Expensive</span> > RM 5,000</span>
+      <span><span class="tag tag-bad">👁 No Students</span> 0 enrolled</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Channel</th><th>Spend (RM)</th><th>Enquiries</th><th>Quality Leads</th><th>1-on-1</th><th>Interview</th><th>Students</th><th>CPE</th><th>CPL</th><th>CPS</th><th>Rating</th></tr></thead>
+        <tbody id="channelTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</div><!-- /tab-ads -->
+
+<!-- ═══════════════════════════════ OKR TRACKER (Tab 2) ═══════════════════════════════ -->
+<div id="tab-okr" style="display:none;">
+<div class="okr-page">
+
+  <!-- Header row: intake status + quarter picker -->
+  <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+
+    <!-- April intake CLOSED -->
+    <div class="okr-top-card ot-days" style="min-width:200px;flex:1;text-align:left;padding:14px 18px;">
+      <div class="okr-top-label">✅ April 2026 Intake · CLOSED</div>
+      <div style="display:flex;align-items:baseline;gap:10px;margin:8px 0 6px;">
+        <span style="font-size:36px;font-weight:800;color:var(--green);">27</span>
+        <span style="font-size:13px;color:var(--muted);">students enrolled</span>
+      </div>
+      <div class="okr-top-sub" style="color:var(--green);font-weight:600;">🎉 Q1 completed · No further action needed</div>
+    </div>
+
+    <!-- Oct intake countdown -->
+    <div class="okr-top-card ot-kpi" style="min-width:160px;flex:0 0 160px;">
+      <div class="okr-top-label">🏫 Oct Intake Countdown</div>
+      <div class="okr-top-value" id="ok-days" style="color:var(--cyan);font-size:32px;">—</div>
+      <div class="okr-top-sub">days · Oct 6, 2026</div>
+    </div>
+
+    <!-- Spacer -->
+    <div style="flex:1;"></div>
+
+    <!-- Quarter selector -->
+    <div style="align-self:center;">
+      <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">📆 Quarter</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="qtrPresets">
+        <button class="qtr-btn" onclick="setQtr('25Q4',this)" style="opacity:.65">Q4 · Oct–Dec 2025</button>
+        <button class="qtr-btn" onclick="setQtr('26Q1',this)" style="opacity:.65">Q1 · Jan–Mar 2026</button>
+        <button class="qtr-btn active" onclick="setQtr('26Q2',this)">Q2 · Apr–Jun 2026 🔥</button>
+        <button class="qtr-btn" onclick="setQtr('26Q3',this)">Q3 · Jul–Sep 2026</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:5px;" id="ok-data-note">Actuals: Apr + May 2026 from ads data</div>
+    </div>
+  </div>
+
+  <!-- Quarter label -->
+  <div class="section-title" id="ok-qtr-label">Q2 Objectives (Apr – Jun 2026) · October Intake</div>
+
+  <!-- 3 Objective progress cards -->
+  <div class="obj-grid" style="margin-bottom:20px;">
+    <div class="obj-card">
+      <div class="obj-header">
+        <div class="obj-label" style="color:var(--blue);">⭐ Quality Leads</div>
+        <div class="obj-pct" id="ok-o1-pct" style="color:var(--blue);">—</div>
+      </div>
+      <div class="obj-meta">actual <strong id="ok-o1-cur">—</strong> / <span id="ok-o1-tgt">—</span> M2 target</div>
+      <div class="progress-wrap"><div class="progress-bar" id="ok-o1-bar" style="background:var(--blue);width:0%"></div></div>
+      <div style="font-size:10px;color:var(--muted);" id="ok-o1-rem">—</div>
+    </div>
+    <div class="obj-card">
+      <div class="obj-header">
+        <div class="obj-label" style="color:var(--purple);">🎤 Interviews</div>
+        <div class="obj-pct" id="ok-o2-pct" style="color:var(--purple);">—</div>
+      </div>
+      <div class="obj-meta">actual <strong id="ok-o2-cur">—</strong> / <span id="ok-o2-tgt">—</span> M2 target</div>
+      <div class="progress-wrap"><div class="progress-bar" id="ok-o2-bar" style="background:var(--purple);width:0%"></div></div>
+      <div style="font-size:10px;color:var(--muted);" id="ok-o2-rem">—</div>
+    </div>
+    <div class="obj-card">
+      <div class="obj-header">
+        <div class="obj-label" style="color:var(--green);" id="ok-o3-label">🎓 Paid · Oct Intake</div>
+        <div class="obj-pct" id="ok-o3-pct" style="color:var(--green);">—</div>
+      </div>
+      <div class="obj-meta">actual <strong id="ok-o3-cur">—</strong> / <span id="ok-o3-tgt">—</span> M2 target</div>
+      <div class="progress-wrap"><div class="progress-bar" id="ok-o3-bar" style="background:var(--green);width:0%"></div></div>
+      <div style="font-size:10px;color:var(--muted);" id="ok-o3-rem">—</div>
+    </div>
+  </div>
+
+  <!-- Milestone gap tracker (the main section) -->
+  <div class="section-title" id="ok-ms-title">Gap to Each Milestone · Oct Intake</div>
+  <div class="ms-grid" id="msGrid"></div>
+  <div id="ok-kj-warning" style="font-size:11px;color:var(--red);font-weight:600;margin-top:12px;padding:10px 14px;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.25);border-radius:8px;display:inline-block;">
+    ⚠️ Hit 不到 M3 (35 closed / 60 interviews)：喝不加糖的苦瓜汁 😬
+  </div>
+
+</div>
+</div><!-- /tab-okr -->
+
+<script>
+// ──────────────────────────────────────────────────────
+// 20 MONTHS: Oct 2024 (0) → May 2026 (19)
+// ──────────────────────────────────────────────────────
+const ML = [
+  'Oct 24','Nov 24','Dec 24','Jan 25','Feb 25','Mar 25','Apr 25','May 25','Jun 25','Jul 25','Aug 25','Sep 25',
+  'Oct 25','Nov 25','Dec 25','Jan 26','Feb 26','Mar 26','Apr 26','May 26'
+];
+
+// FY boundary indices
+const FY25_FROM=0, FY25_TO=11, FY26_FROM=12, FY26_TO=19;
+
+// ──────────────────────────────────────────────────────
+// RAW DATA — arrays length 20 (FY25 months 0-11, FY26 months 12-19)
+// ──────────────────────────────────────────────────────
+const RAW = {
+  'VSL': {
+    spend:  [8270.86, 6097.38, 4802.41, 6224.37, 8735.62, 8904.21, 12684.43, 8744.76, 12809.04, 11341.72, 11383.59, 8107.83, 7591.69, 7477.63, 7943.14, 6653.89, 9432.68, 10133.12, 9197.21, 4535.37],
+    leads:  [70, 34, 26, 49, 85, 108, 222, 155, 187, 164, 219, 195, 255, 422, 259, 188, 242, 142, 204, 56],
+    quality:  [2, 0, 4, 11, 7, 16, 23, 21, 15, 7, 20, 13, 9, 7, 9, 7, 11, 20, 22, 0],
+    signup:  [2, 7, 6, 5, 8, 5, 8, 5, 7, 6, 14, 3, 6, 6, 6, 4, 7, 7, 13, 0],
+    interview:  [0, 3, 8, 3, 9, 3, 5, 4, 1, 4, 8, 1, 2, 2, 3, 2, 1, 6, 9, 1],
+    students:  [0, 6, 3, 1, 3, 3, 3, 2, 1, 2, 3, 1, 1, 0, 1, 1, 1, 5, 3, 0]
+  },
+  'Trial Class': {
+    spend:  [532.09, 1152.39, 1351.13, 1315.54, 7973.77, 5261.96, 0, 5716.53, 2616.79, 7120.35, 6665.41, 5789.08, 2786.64, 1571.58, 3180.99, 2944.09, 1503.78, 4943.22, 382.64, 4801.74],
+    leads:  [52, 33, 4, 15, 60, 21, 0, 42, 25, 46, 54, 32, 28, 26, 34, 34, 16, 26, 6, 26],
+    quality:  [0, 0, 7, 0, 9, 4, 0, 8, 4, 2, 6, 4, 5, 4, 10, 15, 6, 7, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 1, 0, 8, 4, 2, 6, 4, 5, 4, 10, 12, 6, 7, 0, 0],
+    interview:  [0, 0, 4, 0, 6, 2, 0, 6, 3, 1, 3, 0, 3, 1, 6, 4, 2, 3, 0, 0],
+    students:  [0, 0, 3, 0, 3, 1, 0, 5, 2, 0, 1, 0, 2, 1, 4, 1, 0, 2, 0, 0]
+  },
+  'Open Day': {
+    spend:  [0, 0, 0, 0, 0, 2854.55, 2963.57, 5466.87, 4262.02, 5035.43, 2854.11, 4288.63, 1770.05, 835.15, 0, 1805.17, 739.87, 597.41, 0, 1322.14],
+    leads:  [0, 0, 0, 0, 0, 9, 10, 15, 7, 11, 1, 7, 12, 11, 0, 30, 4, 0, 0, 2],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 7, 5, 6, 1, 3, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 4, 2, 4, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  'Google Ads': {
+    spend:  [0, 0, 0, 0, 0, 0, 0, 156.20, 384.04, 608.16, 344.25, 306.91, 303.90, 304.43, 303.99, 298.18, 306.90, 304.24, 298.57, 165.32],
+    leads:  [0, 0, 0, 0, 0, 0, 0, 4, 9, 11, 5, 7, 6, 3, 4, 5, 4, 17, 13, 4],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 0, 2, 0, 1, 3, 0],
+    signup:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 2, 0, 1, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 2, 0, 1, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+  },
+  'XHS': {
+    spend:  [0, 0, 0, 0, 1220, 0, 4420, 580, 3250, 0, 300, 0, 3500, 0, 0, 0, 0, 300, 0, 0],
+    leads:  [0, 0, 0, 0, 0, 3, 7, 5, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 1, 3, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  'KOL Influencer': {
+    spend:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16200, 16200, 0, 0],
+    leads:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  'YouTube': {
+    spend:  [0, 0, 0, 0, 0, 0, 0, 1188.33, 402.47, 501.75, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    leads:  [0, 0, 0, 0, 0, 0, 0, 3, 3, 11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  'Lead Magnet': {
+    spend:  [0, 0, 0, 0, 0, 6986.20, 2638.55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    leads:  [0, 0, 0, 0, 0, 116, 91, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  },
+  'Road Show': {
+    spend:  [0, 0, 0, 0, 0, 0, 0, 5400, 0, 0, 0, 0, 0, 1750, 0, 6850, 3500, 3650, 5400, 1500],
+    leads:  [0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 6, 0, 21, 9, 7, 0, 104],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+  },
+  'School Fair': {
+    spend:  [0, 0, 0, 0, 0, 0, 2848, 0, 2706, 3904, 1950, 1394, 6161, 650, 0, 0, 0, 600, 1300, 3400],
+    leads:  [0, 0, 0, 0, 0, 0, 188, 0, 136, 245, 119, 98, 324, 17, 0, 0, 0, 38, 27, 118],
+    quality:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0],
+    signup:  [0, 0, 0, 0, 0, 0, 1, 0, 4, 1, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0],
+    interview:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0],
+    students:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0]
+  }
+};
+
+const CHANNELS = Object.keys(RAW);
+
+const COLORS = {
+  'VSL':            {line:'#28c2e7', fill:'rgba(40,194,231,.15)'},
+  'Trial Class':    {line:'#fcb040', fill:'rgba(252,176,64,.15)'},
+  'Open Day':       {line:'#a78bfa', fill:'rgba(167,139,250,.15)'},
+  'Google Ads':     {line:'#3fb950', fill:'rgba(63,185,80,.15)'},
+  'XHS':            {line:'#f43f5e', fill:'rgba(244,63,94,.15)'},
+  'KOL Influencer': {line:'#f97316', fill:'rgba(249,115,22,.15)'},
+  'YouTube':        {line:'#ef4444', fill:'rgba(239,68,68,.15)'},
+  'Lead Magnet':    {line:'#8b5cf6', fill:'rgba(139,92,246,.15)'},
+  'Road Show':      {line:'#06b6d4', fill:'rgba(6,182,212,.15)'},
+  'School Fair':    {line:'#84cc16', fill:'rgba(132,204,22,.15)'},
+};
+
+// FY2024 hardcoded (full year reference)
+const FY24 = {spend:112205.59, leads:2895, quality:108, signup:108, interview:61, students:35};
+
+// ── Base Chart Options ──
+const BO = {
+  responsive:true,
+  plugins:{
+    legend:{labels:{color:'#8b949e',font:{size:10},boxWidth:11,padding:8}},
+    tooltip:{backgroundColor:'rgba(10,25,55,.95)',titleColor:'#ffffff',bodyColor:'#8ab4d8',borderColor:'rgba(255,255,255,.15)',borderWidth:1}
+  },
+  scales:{
+    x:{ticks:{color:'#8ab4d8',font:{size:9}},grid:{color:'rgba(255,255,255,.06)'}},
+    y:{ticks:{color:'#8ab4d8',font:{size:9}},grid:{color:'rgba(255,255,255,.06)'}}
+  }
+};
+
+// ── Chart Instances ──
+let C = {};
+function initCharts() {
+  C.spend = new Chart(document.getElementById('chartSpend'),{type:'bar',data:{labels:[],datasets:[]},
+    options:{...BO,scales:{x:{...BO.scales.x,stacked:true},y:{...BO.scales.y,stacked:true,ticks:{...BO.scales.y.ticks,callback:v=>'RM'+(v/1000).toFixed(0)+'k'}}}}});
+
+  C.enq = new Chart(document.getElementById('chartEnq'),{type:'line',data:{labels:[],datasets:[]},options:{...BO}});
+
+  C.cpl = new Chart(document.getElementById('chartCPL'),{type:'bar',data:{labels:[],datasets:[]},
+    options:{...BO,indexAxis:'y',plugins:{...BO.plugins,legend:{display:false},
+      tooltip:{...BO.plugins.tooltip,callbacks:{label:ctx=>' RM '+(ctx.parsed.x||0).toLocaleString()}}},
+      scales:{x:{...BO.scales.x,ticks:{...BO.scales.x.ticks,callback:v=>'RM '+v.toLocaleString()}},y:{...BO.scales.y}}}});
+
+  C.pie = new Chart(document.getElementById('chartPie'),{type:'doughnut',data:{labels:[],datasets:[]},
+    options:{responsive:true,plugins:{legend:{position:'right',labels:{color:'#8b949e',font:{size:10},padding:8,boxWidth:11}},
+      tooltip:{...BO.plugins.tooltip,callbacks:{label:ctx=>' RM '+ctx.parsed.toLocaleString()}}}}});
+
+  C.yoy = new Chart(document.getElementById('chartYoY'),{type:'bar',
+    data:{labels:['Spend (RM)','Enquiries','Quality Leads','1-on-1','Interview','Students'],datasets:[]},
+    options:{...BO}});
+}
+
+// ── Helpers ──
+const sum = (arr,f,t) => arr.slice(f,t+1).reduce((a,b)=>a+b,0);
+const slc = (arr,f,t) => arr.slice(f,t+1);
+const fmt = (n,dp=0) => n==null||isNaN(n)?'—':n.toLocaleString(undefined,{minimumFractionDigits:dp,maximumFractionDigits:dp});
+const fmtRM = (n,dp=0) => (!n||n<=0)?'—':'RM '+fmt(n,dp);
+
+// ── Filter State ──
+let F=12, T=19;
+
+function setPreset(f,t,btn){
+  F=f;T=t;
+  document.getElementById('fromMonth').value=f;
+  document.getElementById('toMonth').value=t;
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAll();
+}
+function applyFilter(){
+  F=parseInt(document.getElementById('fromMonth').value);
+  T=parseInt(document.getElementById('toMonth').value);
+  if(T<F){T=F;document.getElementById('toMonth').value=F;}
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  renderAll();
+}
+
+// ── Main Render ──
+function renderAll(){
+  const f=F,t=T;
+  const labels=ML.slice(f,t+1);
+  const n=t-f+1;
+
+  // Define FY25 flag early so it can be used for filter text and aggregation
+  const isFullFY25 = (f===FY25_FROM && t===FY25_TO);
+
+  // Filter text
+  let pLabel='';
+  if(f===0&&t===11) pLabel='FY2025 (Oct 24–Sep 25)';
+  else if(f===12&&t===19) pLabel='FY2026 YTD (Oct 25–May 26)';
+  else if(f===0&&t===19) pLabel='All Time';
+  else pLabel=`${ML[f]} – ${ML[t]}`;
+  const isFullFY26 = (f===FY26_FROM && t===FY26_TO);
+  const verifiedBadge = (isFullFY25||isFullFY26) ? ' &nbsp;<span style="background:rgba(63,185,80,.15);color:#3fb950;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">✓ 总览 Verified</span>' : '';
+  document.getElementById('filterText').innerHTML=`${pLabel} &nbsp;<span>(${n} month${n>1?'s':''})</span>${verifiedBadge}`;
+
+  // ═══════════════════════════════════════════════════════════════
+  // Verified annual totals from 总览 (by fiscal year)
+  // KOL / Road Show / School Fair are offline — tracked separately
+  // in 总览 and NOT included in the digital ads KPI total.
+  // ═══════════════════════════════════════════════════════════════
+  const VERIFIED = {
+    FY25: {
+      'VSL':          {spend:108106.22, leads:1514, quality:139, signup:76, interview:49, students:28},
+      'Trial Class':  {spend:45495.04,  leads:384,  quality:44,  signup:37, interview:27, students:18},
+      'Open Day':     {spend:27725.18,  leads:60,   quality:22,  signup:22, interview:11, students:8},
+      'Google Ads':   {spend:1799.56,   leads:36,   quality:0,   signup:0,  interview:0,  students:0},
+      'XHS':          {spend:9770,      leads:15,   quality:6,   signup:5,  interview:2,  students:2},
+      'YouTube':      {spend:2092.55,   leads:17,   quality:0,   signup:0,  interview:0,  students:0},
+      'Lead Magnet':  {spend:9624.75,   leads:207,  quality:0,   signup:0,  interview:0,  students:0},
+      // Offline (shown in table, excluded from main KPI total)
+      'KOL Influencer':{spend:0,        leads:0,    quality:0,   signup:0,  interview:0,  students:0},
+      'Road Show':    {spend:5400,      leads:19,   quality:2,   signup:2,  interview:0,  students:0},
+      'School Fair':  {spend:10802,     leads:786,  quality:0,   signup:9,  interview:4,  students:2},
+    },
+    FY26: {
+
+      'VSL':           {spend:62964.73, leads:1768, quality:85, signup:49, interview:26, students:12},
+      'Trial Class':   {spend:22114.68, leads:196, quality:34, signup:31, interview:14, students:8},
+      'Open Day':      {spend:7069.79, leads:59, quality:2, signup:1, interview:1, students:0},
+      'Google Ads':    {spend:2285.53, leads:56, quality:9, signup:4, interview:4, students:1},
+      'XHS':           {spend:3800.0, leads:3, quality:3, signup:1, interview:0, students:0},
+      'YouTube':       {spend:0.0, leads:0, quality:0, signup:0, interview:0, students:0},
+      'Lead Magnet':   {spend:0.0, leads:0, quality:0, signup:0, interview:0, students:0},
+      // Offline
+      'KOL Influencer': {spend:0, leads:0, quality:0, signup:0, interview:0, students:0},
+      'Road Show':     {spend:0, leads:0, quality:0, signup:0, interview:0, students:0},
+      'School Fair':   {spend:0, leads:0, quality:0, signup:0, interview:0, students:0},
+    }
+  };
+
+  // Digital channels (match 总览 main total — excludes KOL/RS/SF)
+  const DIGITAL_CH = ['VSL','Trial Class','Open Day','Google Ads','XHS','YouTube','Lead Magnet'];
+  const useVerified = isFullFY25 || isFullFY26;
+  const verifiedData = isFullFY25 ? VERIFIED.FY25 : isFullFY26 ? VERIFIED.FY26 : null;
+
+  const agg={};
+  CHANNELS.forEach(ch=>{
+    if(useVerified && verifiedData[ch]) {
+      agg[ch] = {...verifiedData[ch]};
+    } else {
+      agg[ch]={
+        spend:   sum(RAW[ch].spend,f,t),
+        leads:   sum(RAW[ch].leads,f,t),
+        quality: sum(RAW[ch].quality,f,t),
+        signup:  sum(RAW[ch].signup,f,t),
+        interview:sum(RAW[ch].interview,f,t),
+        students:sum(RAW[ch].students,f,t),
+      };
+    }
+  });
+
+  // KPI totals = digital channels only (matching 总览)
+  const TT={spend:0,leads:0,quality:0,signup:0,interview:0,students:0};
+  const TT_ALL={spend:0,leads:0,quality:0,signup:0,interview:0,students:0};
+  CHANNELS.forEach(ch=>{
+    Object.keys(TT_ALL).forEach(k=>TT_ALL[k]+=agg[ch][k]);
+    if(DIGITAL_CH.includes(ch)) Object.keys(TT).forEach(k=>TT[k]+=agg[ch][k]);
+  });
+
+  // KPIs
+  const offlineCh = ['KOL Influencer','Road Show','School Fair'];
+  const offlineSpend = offlineCh.reduce((s,ch)=>s+agg[ch].spend,0);
+  const offlineStu   = offlineCh.reduce((s,ch)=>s+agg[ch].students,0);
+  document.getElementById('k-spend').textContent='RM '+fmt(TT.spend);
+  document.getElementById('k-spend-s').textContent=offlineSpend>0?`+RM${fmt(offlineSpend)} offline`:`${n} month${n>1?'s':''} digital`;
+  document.getElementById('k-enq').textContent=fmt(TT.leads);
+  document.getElementById('k-enq-s').textContent='CPE: '+(TT.leads>0?fmtRM(TT.spend/TT.leads,2):'—');
+  document.getElementById('k-ql').textContent=fmt(TT.quality);
+  document.getElementById('k-ql-s').textContent='CPL: '+(TT.quality>0?fmtRM(TT.spend/TT.quality,0):'—');
+  document.getElementById('k-1o1').textContent=fmt(TT.signup);
+  document.getElementById('k-1o1-s').textContent='Cost/session: '+(TT.signup>0?fmtRM(TT.spend/TT.signup,0):'—');
+  document.getElementById('k-int').textContent=fmt(TT.interview);
+  document.getElementById('k-int-s').textContent='Cost/interview: '+(TT.interview>0?fmtRM(TT.spend/TT.interview,0):'—');
+  document.getElementById('k-stu').textContent=fmt(TT.students);
+  document.getElementById('k-stu-s').textContent='CPS: '+(TT.students>0?fmtRM(TT.spend/TT.students,0):'—')+(offlineStu>0?` (+${offlineStu} offline)`:'');
+  document.getElementById('k-r1').textContent=TT.leads>0?(TT.quality/TT.leads*100).toFixed(1)+'%':'—';
+  document.getElementById('k-r2').textContent=TT.quality>0?(TT.signup/TT.quality*100).toFixed(1)+'%':'—';
+  document.getElementById('k-r3').textContent=TT.signup>0?(TT.interview/TT.signup*100).toFixed(1)+'%':'—';
+  document.getElementById('k-r4').textContent=TT.interview>0?(TT.students/TT.interview*100).toFixed(1)+'%':'—';
+  // Cost per stage
+  document.getElementById('k-cpe').textContent=TT.leads>0?'RM '+fmt(TT.spend/TT.leads,2):'—';
+  document.getElementById('k-cpl').textContent=TT.quality>0?'RM '+fmt(TT.spend/TT.quality,0):'—';
+  document.getElementById('k-c1o1').textContent=TT.signup>0?'RM '+fmt(TT.spend/TT.signup,0):'—';
+  document.getElementById('k-cint').textContent=TT.interview>0?'RM '+fmt(TT.spend/TT.interview,0):'—';
+  const cpsFinal=TT.students>0?TT.spend/TT.students:null;
+  document.getElementById('k-cstu').textContent=cpsFinal?'RM '+fmt(cpsFinal,0):'—';
+  document.getElementById('k-cstu').style.color=cpsFinal?(cpsFinal<=3600?'var(--green)':cpsFinal<=5000?'var(--yellow)':'var(--red)'):'var(--green)';
+
+  // Only show channels with any spend in selected range
+  const activeCh = CHANNELS.filter(ch=>agg[ch].spend>0||agg[ch].leads>0);
+
+  // Spend chart
+  C.spend.data.labels=labels;
+  C.spend.data.datasets=activeCh.map(ch=>({label:ch,data:slc(RAW[ch].spend,f,t),backgroundColor:COLORS[ch].fill,borderColor:COLORS[ch].line,borderWidth:2,borderRadius:2}));
+  C.spend.update();
+
+  // Enquiry chart
+  C.enq.data.labels=labels;
+  C.enq.data.datasets=activeCh.map(ch=>({label:ch,data:slc(RAW[ch].leads,f,t),borderColor:COLORS[ch].line,backgroundColor:COLORS[ch].fill,borderWidth:2,pointRadius:3,tension:.3,fill:false}));
+  C.enq.update();
+
+  // CPL chart (only channels with quality leads)
+  const cplCh=activeCh.filter(ch=>agg[ch].quality>0);
+  C.cpl.data.labels=cplCh.map(ch=>ch);
+  C.cpl.data.datasets=[{label:'CPL',data:cplCh.map(ch=>Math.round(agg[ch].spend/agg[ch].quality)),backgroundColor:cplCh.map(ch=>COLORS[ch].fill),borderColor:cplCh.map(ch=>COLORS[ch].line),borderWidth:2,borderRadius:3}];
+  C.cpl.update();
+
+  // Pie chart
+  const pieCh=activeCh.filter(ch=>agg[ch].spend>0);
+  C.pie.data.labels=pieCh;
+  C.pie.data.datasets=[{data:pieCh.map(ch=>agg[ch].spend),backgroundColor:pieCh.map(ch=>COLORS[ch].line),borderColor:'#161b22',borderWidth:3}];
+  C.pie.update();
+
+  // YoY (full FY totals, not filtered — for context)
+  const fy25tot=(k)=>CHANNELS.reduce((s,ch)=>s+sum(RAW[ch][k],FY25_FROM,FY25_TO),0);
+  const fy26tot=(k)=>CHANNELS.reduce((s,ch)=>s+sum(RAW[ch][k],FY26_FROM,FY26_TO),0);
+  const selTot=(k)=>TT[k];
+  const isFullFY = (f===0&&t===11)||(f===12&&t===19)||(f===0&&t===19);
+  const yoyLabel26 = (f===12&&t===19)?'FY2026 YTD':(f===0&&t===19)?'FY2026 YTD':
+    `${ML[Math.max(f,12)]}–${ML[Math.min(t,19)]}`;
+
+  C.yoy.data.datasets=[
+    {label:'FY2024 (Full Year)',data:[FY24.spend,FY24.leads,FY24.quality,FY24.signup,FY24.interview,FY24.students],backgroundColor:'rgba(139,148,158,.3)',borderColor:'#8b949e',borderWidth:1.5,borderRadius:3},
+    {label:'FY2025 (Full Year)',data:[fy25tot('spend'),fy25tot('leads'),fy25tot('quality'),fy25tot('signup'),fy25tot('interview'),fy25tot('students')],backgroundColor:'rgba(40,194,231,.25)',borderColor:'#28c2e7',borderWidth:1.5,borderRadius:3},
+    {label:yoyLabel26,data:[fy26tot('spend'),fy26tot('leads'),fy26tot('quality'),fy26tot('signup'),fy26tot('interview'),fy26tot('students')],backgroundColor:'rgba(252,176,64,.3)',borderColor:'#fcb040',borderWidth:1.5,borderRadius:3},
+  ];
+  C.yoy.update();
+
+  // Funnel
+  const fd=[
+    {label:'Enquiries',   value:TT.leads,    color:'#28c2e7'},
+    {label:'Quality Leads',value:TT.quality,  color:'#0f75bc'},
+    {label:'1-on-1',      value:TT.signup,   color:'#7dd3fc'},
+    {label:'Interview',   value:TT.interview, color:'#a78bfa'},
+    {label:'Enrolled',    value:TT.students, color:'#3fb950'},
+  ];
+  const mx=fd[0].value||1;
+  document.getElementById('funnelEl').innerHTML=fd.map((d,i)=>{
+    const pct=i===0?'':fd[i-1].value>0?`↓ ${(d.value/fd[i-1].value*100).toFixed(1)}% from prev`:'—';
+    const w=(d.value/mx*100).toFixed(1);
+    return `<div class="funnel-row">
+      <div class="funnel-label">${d.label}</div>
+      <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${w}%;background:${d.color}22;border-left:3px solid ${d.color};"><span style="color:${d.color}">${d.value.toLocaleString()}</span></div></div>
+      <div class="funnel-meta">${pct}</div>
+    </div>`;
+  }).join('');
+
+  // Channel Table — sort by students desc, then spend desc
+  const rows=CHANNELS.map(ch=>({name:ch,...agg[ch]})).filter(r=>r.spend>0||r.students>0);
+  rows.sort((a,b)=>b.students-a.students||b.spend-a.spend);
+  const cpsNum=r=>r.students>0?r.spend/r.students:null;
+  const isOffline=ch=>offlineCh.includes(ch);
+  document.getElementById('channelTable').innerHTML=rows.map(r=>{
+    const cps=cpsNum(r);
+    let rat,tag;
+    if(cps!==null&&cps<=3600)       {rat='✅ On Target';   tag='tag-good';}
+    else if(cps!==null&&cps<=5000)  {rat='⚠️ Over Budget'; tag='tag-warn';}
+    else if(cps!==null)             {rat='🔴 Too Expensive';tag='tag-bad';}
+    else                            {rat='👁 No Students';  tag='tag-bad';}
+    const offlineBadge = isOffline(r.name) ? ' <span style="font-size:9px;color:var(--muted);background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;">Offline</span>' : '';
+    return `<tr>
+      <td><strong style="color:${COLORS[r.name].line}">${r.name}</strong>${offlineBadge}</td>
+      <td>RM ${fmt(r.spend,2)}</td>
+      <td>${fmt(r.leads)}</td>
+      <td>${fmt(r.quality)}</td>
+      <td>${fmt(r.signup)}</td>
+      <td>${fmt(r.interview)}</td>
+      <td><strong>${fmt(r.students)}</strong></td>
+      <td>${r.leads>0?'RM '+fmt(r.spend/r.leads,2):'—'}</td>
+      <td>${r.quality>0?'RM '+fmt(r.spend/r.quality,0):'—'}</td>
+      <td>${cps?'RM '+fmt(cps,0):'—'}</td>
+      <td><span class="tag ${tag}">${rat}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+initCharts();
+renderAll();
+
+// ═══════════════ TAB SWITCHING ═══════════════
+function showTab(t){
+  document.getElementById('tab-ads').style.display = t==='ads'?'':'none';
+  document.getElementById('tab-okr').style.display  = t==='okr'?'':'none';
+  document.getElementById('btn-ads').classList.toggle('active', t==='ads');
+  document.getElementById('btn-okr').classList.toggle('active', t==='okr');
+  if(t==='okr') renderOKR();
+}
+
+// ═══════════════ OKR DATA ═══════════════
+const NEXT_INTAKE_DATE = new Date('2026-10-06');
+
+// ── Quarter definitions (from 03 SUMA All Team Quarter OKR sheet) ──
+// RAW data index: Oct24=0 … May26=19
+// Oct25=12, Nov25=13, Dec25=14, Jan26=15, Feb26=16, Mar26=17, Apr26=18, May26=19
+const QUARTERS = {
+  // ── Q4 '25: selling April 2026 intake (Oct–Dec 2025) ──
+  '25Q4': {
+    label:'Q4 · Oct – Dec 2025', intake:'April 2026 Intake', closed:true,
+    startIdx:12, endIdx:14,
+    dataNote:'Closed · April 2026 intake · 6 enrolled this quarter',
+    kpi:{ ql:58, int:21, paid:6 },
+    actuals:{ ql:null, int:null, paid:6 }, // ql/int from RAW
+    milestones:[
+      {level:'M3', label:'Minimum', ql:47, int:10, paid:6, color:'#f85149'},
+      {level:'M2', label:'Target ⭐', ql:58, int:21, paid:6, color:'#fcb040'},
+      {level:'M1', label:'', ql:69, int:25, paid:6, color:'#28c2e7'},
+      {level:'M0', label:'Stretch', ql:81, int:29, paid:6, color:'#3fb950'},
+    ]
+  },
+  // ── Q1 '26: selling April 2026 intake (Jan–Mar 2026) ──
+  '26Q1': {
+    label:'Q1 · Jan – Mar 2026', intake:'April 2026 Intake', closed:true,
+    startIdx:15, endIdx:17,
+    dataNote:'Closed · April 2026 intake · 21 enrolled this quarter',
+    kpi:{ ql:128, int:46, paid:21 },
+    actuals:{ ql:null, int:null, paid:21 },
+    milestones:[
+      {level:'M3', label:'Minimum', ql:117, int:35, paid:21, color:'#f85149'},
+      {level:'M2', label:'Target ⭐', ql:128, int:46, paid:21, color:'#fcb040'},
+      {level:'M1', label:'', ql:139, int:50, paid:19, color:'#28c2e7'},
+      {level:'M0', label:'Stretch', ql:150, int:54, paid:19, color:'#3fb950'},
+    ]
+  },
+  // ── Q2 '26: selling October 2026 intake (Apr–Jun 2026) ── CURRENT
+  '26Q2': {
+    label:'Q2 · Apr – Jun 2026', intake:'October 2026 Intake',
+    startIdx:18, endIdx:19,
+    dataNote:'Actuals: Apr + May 2026 · update weekly',
+    kpi:{ ql:176, int:63, paid:38 },
+    // ── Update actuals here each week ──
+    actuals:{ ql:25, int:10, paid:3 },
+    milestones:[
+      {level:'M3', label:'Minimum', ql:162, int:58, paid:35, color:'#f85149'},
+      {level:'M2', label:'Target ⭐', ql:176, int:63, paid:38, color:'#fcb040'},
+      {level:'M1', label:'', ql:185, int:67, paid:40, color:'#28c2e7'},
+      {level:'M0', label:'Stretch', ql:208, int:75, paid:45, color:'#3fb950'},
+    ]
+  },
+  // ── Q3 '26: selling October 2026 intake (Jul–Sep 2026) ──
+  '26Q3': {
+    label:'Q3 · Jul – Sep 2026', intake:'October 2026 Intake',
+    startIdx:21, endIdx:23,
+    dataNote:'Q3 not started yet · targets shown only',
+    kpi:{ ql:116, int:42, paid:25 },
+    actuals:{ ql:0, int:0, paid:0 },
+    milestones:[
+      {level:'M3', label:'Minimum', ql:93, int:33, paid:20, color:'#f85149'},
+      {level:'M2', label:'Target ⭐', ql:116, int:42, paid:25, color:'#fcb040'},
+      {level:'M1', label:'', ql:162, int:58, paid:35, color:'#28c2e7'},
+      {level:'M0', label:'Stretch', ql:185, int:67, paid:40, color:'#3fb950'},
+    ]
+  }
+};
+
+let activeQtr = '26Q2';
+function setQtr(key, btn){
+  activeQtr = key;
+  document.querySelectorAll('#qtrPresets .qtr-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderOKR();
+}
+
+// Sum RAW data for a metric across all channels, from startIdx to endIdx (capped to data length)
+function sumRaw(metric, startIdx, endIdx){
+  const cap = ML.length - 1;
+  const s = Math.min(startIdx, cap);
+  const e = Math.min(endIdx, cap);
+  if(s > cap) return 0;
+  return CHANNELS.reduce((tot, ch) => {
+    for(let i=s; i<=e; i++) tot += (RAW[ch][metric][i] || 0);
+    return tot;
+  }, 0);
+}
+
+function renderOKR(){
+  const Q = QUARTERS[activeQtr];
+
+  // Days countdown
+  const days = Math.max(0, Math.ceil((NEXT_INTAKE_DATE - new Date())/(1000*60*60*24)));
+  document.getElementById('ok-days').textContent = days;
+
+  // Quarter label + data note
+  const intakeLabel = Q.intake || 'October 2026 Intake';
+  document.getElementById('ok-qtr-label').textContent =
+    `${Q.label} · ${intakeLabel}${Q.closed ? ' · ✅ Closed' : ''}`;
+  document.getElementById('ok-data-note').textContent = Q.dataNote;
+  document.getElementById('ok-ms-title').textContent =
+    `${Q.closed ? 'Results vs' : 'Gap to Each'} Milestone · ${intakeLabel}`;
+  const intakeShort = intakeLabel.replace('October','Oct').replace(/\s*20\d\d/,'');
+  document.getElementById('ok-o3-label').textContent = `🎓 Paid · ${intakeShort}`;
+  document.getElementById('ok-kj-warning').style.display = Q.closed ? 'none' : 'inline-block';
+
+  // Dim past-quarter buttons, highlight active
+  document.querySelectorAll('#qtrPresets .qtr-btn').forEach(b=>{
+    b.style.opacity = b.classList.contains('active') ? '1' : (b.textContent.includes('Q4')||b.textContent.includes('Q1 ')) ? '.55' : '1';
+  });
+
+  // ── Actuals: hardcoded paid; QL/int from RAW if null ──
+  const qlAct   = Q.actuals.ql  !== null ? Q.actuals.ql  : sumRaw('quality',   Q.startIdx, Q.endIdx);
+  const intAct  = Q.actuals.int !== null ? Q.actuals.int : sumRaw('interview', Q.startIdx, Q.endIdx);
+  const paidAct = Q.actuals.paid;
+  const act = { ql: qlAct, int: intAct, paid: paidAct };
+
+  // ── Objective progress bars ──
+  function setObj(prefix, actual, target, color){
+    const pct = target > 0 ? Math.min(100, actual/target*100) : 0;
+    document.getElementById(prefix+'-pct').textContent = pct.toFixed(0)+'%';
+    document.getElementById(prefix+'-pct').style.color = pct>=100?'var(--green)':color;
+    document.getElementById(prefix+'-cur').textContent = actual !== null ? actual : '—';
+    document.getElementById(prefix+'-tgt').textContent = target;
+    document.getElementById(prefix+'-bar').style.width = pct.toFixed(1)+'%';
+    const rem = target - actual;
+    document.getElementById(prefix+'-rem').textContent = Q.closed
+      ? (actual >= target ? '✅ Target hit!' : `Result: ${actual}/${target}`)
+      : (rem > 0 ? `Need ${rem} more to hit M2` : '🎉 M2 target hit!');
+  }
+  setObj('ok-o1', act.ql,   Q.kpi.ql,   'var(--blue)');
+  setObj('ok-o2', act.int,  Q.kpi.int,  'var(--purple)');
+  setObj('ok-o3', act.paid, Q.kpi.paid, 'var(--green)');
+
+  // ── Milestone gap cards (3 metrics: QL / Interview / Paid) ──
+  document.getElementById('msGrid').innerHTML = Q.milestones.map(ms=>{
+    const achieved = act.paid >= ms.paid && act.int >= ms.int && act.ql >= ms.ql;
+    const cls = achieved ? 'ms-card achieved' : (ms.level==='M2'?'ms-card on-track':'ms-card');
+    const tagStyle = achieved ? 'background:rgba(63,185,80,.25);color:var(--green)' :
+                    ms.level==='M2' ? 'background:rgba(252,176,64,.2);color:var(--yellow)' :
+                    ms.label ? 'background:rgba(255,255,255,.06);color:var(--muted)' : '';
+    const tagLabel = achieved ? '✅ Achieved' : ms.label;
+
+    // Helper to render one metric row
+    function mRow(emoji, label, actual, target){
+      const gap  = Math.max(0, target - actual);
+      const pct  = target > 0 ? Math.min(100, actual/target*100) : 0;
+      const done = gap === 0;
+      const txt  = done ? '✅ Done' : Q.closed ? `Final: ${actual}/${target}` : `Need ${gap} more`;
+      const c    = done ? 'var(--green)' : 'var(--red)';
+      return `<div class="ms-row" style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:11px;">
+          <span style="color:var(--muted)">${emoji} ${label}</span>
+          <strong style="color:${done?'var(--green)':'var(--text)'}">${actual}/${target}</strong>
+        </div>
+        <div style="background:rgba(0,0,0,.35);border-radius:4px;height:5px;">
+          <div style="width:${pct.toFixed(1)}%;height:5px;border-radius:4px;background:${ms.color};opacity:.85;"></div>
+        </div>
+        <div style="font-size:10px;color:${c};margin-top:2px;font-weight:600;">${txt}</div>
+      </div>`;
+    }
+
+    return `<div class="${cls}">
+      <div class="ms-level" style="color:${ms.color}">${ms.level}</div>
+      ${tagLabel?`<div class="ms-tag" style="${tagStyle}">${tagLabel}</div>`:'<div style="height:20px"></div>'}
+      <div style="margin:10px 0 0;border-top:1px solid var(--border);padding-top:10px;">
+        ${mRow('⭐','Obj 1 · Quality Leads', act.ql,   ms.ql)}
+        ${mRow('🎤','Obj 2 · Interview',     act.int,  ms.int)}
+        ${mRow('🎓','Obj 3 · Paid',          act.paid, ms.paid)}
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
