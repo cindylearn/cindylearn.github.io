@@ -1367,17 +1367,37 @@ const FUNNEL_META = [
 
 const CH_LABELS = {"Lead Magnet":"Lead Magnet","VSL":"VSL","Open Day":"Open Day","Google Ads":"Google","Youtube":"YouTube","Trial Class":"Trial Class","Road Show":"Road Show","School Fair":"School Fair","XHS":"XHS","KOL":"KOL"};
 
+const MONTHLY_2026 = {
+  "Lead Magnet":{"2026-01":[0.0,0.0,0,0,0,0],"2026-02":[0.0,0.0,0,0,0,0],"2026-03":[0.0,0.0,0,0,0,0],"2026-04":[0.0,0.0,0,0,0,0],"2026-05":[0.0,0.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "VSL":{"2026-01":[6653.89,188.0,7,4,2,1],"2026-02":[9432.68,242.0,11,7,1,1],"2026-03":[10133.12,142.0,20,7,6,5],"2026-04":[9197.21,204.0,22,13,9,3],"2026-05":[4535.37,56.0,0,0,1,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "Open Day":{"2026-01":[1805.17,30.0,0,0,0,0],"2026-02":[739.87,4.0,0,0,0,0],"2026-03":[597.41,0.0,0,0,0,0],"2026-04":[0.0,0.0,0,0,0,0],"2026-05":[1322.14,2.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "Google Ads":{"2026-01":[298.18,5.0,2,2,2,0],"2026-02":[306.9,4.0,0,0,0,0],"2026-03":[304.24,17.0,1,1,1,0],"2026-04":[298.57,13.0,3,0,0,0],"2026-05":[165.32,4.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "Youtube":{"2026-01":[0.0,0.0,0,0,0,0],"2026-02":[0.0,0.0,0,0,0,0],"2026-03":[0.0,0.0,0,0,0,0],"2026-04":[0.0,0.0,0,0,0,0],"2026-05":[0.0,0.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "Trial Class":{"2026-01":[2944.09,34.0,15,12,4,1],"2026-02":[1503.78,16.0,6,6,2,0],"2026-03":[4943.22,26.0,7,7,3,2],"2026-04":[382.64,6.0,0,0,0,0],"2026-05":[4801.74,26.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "Road Show":{"2026-01":[6850.0,21.0,1,1,1,1],"2026-02":[3500.0,9.0,0,0,0,0],"2026-03":[3650.0,7.0,0,0,0,0],"2026-04":[5400.0,0.0,0,0,0,0],"2026-05":[1500.0,104.0,0,0,0,0],"2026-06":[5250.0,0.0,0,0,0,0]},
+  "School Fair":{"2026-01":[0.0,0.0,0,0,0,0],"2026-02":[0.0,0.0,0,0,0,0],"2026-03":[600.0,38.0,0,0,0,0],"2026-04":[1300.0,27.0,0,0,0,0],"2026-05":[3400.0,118.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "XHS":{"2026-01":[0.0,2.0,2,0,0,0],"2026-02":[0.0,0.0,0,0,0,0],"2026-03":[300.0,1.0,1,1,0,0],"2026-04":[0.0,0.0,0,0,0,0],"2026-05":[0.0,0.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+  "KOL":{"2026-01":[0.0,0.0,0,0,0,0],"2026-02":[16200.0,0.0,0,0,0,0],"2026-03":[16200.0,2.0,0,0,0,0],"2026-04":[0.0,0.0,0,0,0,0],"2026-05":[0.0,0.0,0,0,0,0],"2026-06":[0.0,0.0,0,0,0,0]},
+};
+const MONTH_KEYS = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06"];
+const MONTH_SHORT = {"2026-01":"Jan","2026-02":"Feb","2026-03":"Mar","2026-04":"Apr","2026-05":"May","2026-06":"Jun"};
+
 let dailyMonth = "all", dailyChannel = "all", dailyFunnel = 0;
 let chartMain = null, chartByCh = null;
 let dailyInited = false;
 
-function filterDaily(){
-  const dates = Object.keys(DAILY_2026).filter(d => {
-    if(dailyMonth === "all") return true;
-    return parseInt(d.split("-")[1]) === parseInt(dailyMonth);
-  }).sort();
-  const channels = dailyChannel === "all" ? DAILY_CHANNELS : [dailyChannel];
-  return { dates, channels };
+function selChannels(){ return dailyChannel === "all" ? DAILY_CHANNELS : [dailyChannel]; }
+function selMonths(){ return dailyMonth === "all" ? MONTH_KEYS : MONTH_KEYS.filter(mk=>parseInt(mk.split("-")[1])===parseInt(dailyMonth)); }
+function selDates(){ return Object.keys(DAILY_2026).filter(d=> dailyMonth==="all" || parseInt(d.split("-")[1])===parseInt(dailyMonth)).sort(); }
+
+// Authoritative monthly totals (from Final Data) for all 6 stages, over selected months+channels
+function monthlyStageTotals(){
+  const t=[0,0,0,0,0,0];
+  selMonths().forEach(mk=>selChannels().forEach(ch=>{
+    const v=(MONTHLY_2026[ch]||{})[mk]||[0,0,0,0,0,0];
+    for(let i=0;i<6;i++) t[i]+=v[i];
+  }));
+  return t;
 }
 
 function hexToRgb(hex){
@@ -1387,28 +1407,18 @@ function hexToRgb(hex){
 
 function renderDaily(){
   if(!dailyInited){ initDailyPills(); dailyInited=true; }
-  const { dates, channels } = filterDaily();
   const fm = FUNNEL_META[dailyFunnel];
-
-  // Compute totals for all 6 funnel stages (for funnel bar)
-  const totals = [0,0,0,0,0,0];
-  const mainVals = [];
-
-  dates.forEach(d=>{
-    const day = DAILY_2026[d]||{};
-    const perStage = [0,0,0,0,0,0];
-    channels.forEach(ch=>{
-      const v=day[ch]||[0,0,0,0,0,0];
-      for(let i=0;i<6;i++) perStage[i]+=v[i];
-    });
-    for(let i=0;i<6;i++) totals[i]+=perStage[i];
-    mainVals.push(parseFloat(perStage[fm.idx].toFixed(fm.idx===0?2:0)));
-  });
-
-  // ── Funnel bar ──
-  const fbar = document.getElementById("funnelBar");
   const fLabels = ["Spend","Enquiry","Quality Leads","Signup","Interview","Paid"];
-  const fColors = FUNNEL_META.map(f=>f.color);
+  const isDaily = fm.idx <= 1;            // Spend & Enquiry have real daily data
+  const channels = selChannels();
+  const months = selMonths();
+  const rgb = hexToRgb(fm.color);
+
+  // ── Authoritative totals (Final Data monthly) for all 6 stages ──
+  const totals = monthlyStageTotals();
+
+  // ── Funnel bar (uses authoritative monthly totals) ──
+  const fbar = document.getElementById("funnelBar");
   const maxVal = Math.max(...totals.slice(1)) || 1;
   fbar.innerHTML = FUNNEL_META.map((f,i)=>{
     const pct = i===0 ? 100 : Math.round(totals[i]/maxVal*100);
@@ -1420,50 +1430,74 @@ function renderDaily(){
     </div>`;
   }).join('<div style="width:1px;background:var(--border);align-self:stretch;"></div>');
 
-  // ── Summary cards for selected stage ──
+  // ── Main chart series: daily for Spend/Enquiry, monthly for QL/Signup/Interview/Paid ──
+  let labels, mainVals, chartType;
+  if(isDaily){
+    const dates = selDates();
+    labels = dates.map(d=>d.slice(5));
+    mainVals = dates.map(d=>{
+      const day=DAILY_2026[d]||{}; let s=0;
+      channels.forEach(ch=>{ s+=(day[ch]||[0,0,0,0,0,0])[fm.idx]; });
+      return parseFloat(s.toFixed(fm.idx===0?2:0));
+    });
+    chartType = fm.idx===0 ? "line" : "bar";
+  } else {
+    labels = months.map(mk=>MONTH_SHORT[mk]);
+    mainVals = months.map(mk=>{
+      let s=0; channels.forEach(ch=>{ s+=((MONTHLY_2026[ch]||{})[mk]||[0,0,0,0,0,0])[fm.idx]; });
+      return s;
+    });
+    chartType = "bar";
+  }
+
+  // ── Summary cards ──
   const total = totals[fm.idx];
-  const avg = dates.length ? total/dates.length : 0;
-  const maxIdx = mainVals.indexOf(Math.max(...mainVals));
-  const bestDay = dates[maxIdx] || "-";
+  const unitN = isDaily ? "Day" : "Month";
+  const avg = mainVals.length ? total/mainVals.length : 0;
+  const bestIdx = mainVals.length ? mainVals.indexOf(Math.max(...mainVals)) : -1;
+  const bestLabel = bestIdx>=0 ? labels[bestIdx] : "-";
   document.getElementById("dailySummary").innerHTML = `
     <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(total)}</div><div class="ds-lbl">Total ${fLabels[fm.idx]}</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(avg)}</div><div class="ds-lbl">Daily Avg</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(Math.max(...mainVals))}</div><div class="ds-lbl">Best Day</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:var(--muted);font-size:14px;">${bestDay}</div><div class="ds-lbl">Best Day Date</div></div>
-    <div class="ds-card"><div class="ds-val" style="color:var(--muted2)">${dates.length}</div><div class="ds-lbl">Days in Range</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(avg)}</div><div class="ds-lbl">${unitN==="Day"?"Daily":"Monthly"} Avg</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:${fm.color}">${fm.fmt(mainVals.length?Math.max(...mainVals):0)}</div><div class="ds-lbl">Peak ${unitN}</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:var(--muted);font-size:14px;">${bestLabel}</div><div class="ds-lbl">Peak ${unitN==="Day"?"Date":"Month"}</div></div>
+    <div class="ds-card"><div class="ds-val" style="color:var(--muted2)">${mainVals.length}</div><div class="ds-lbl">${unitN}s in Range</div></div>
   `;
 
   // ── Main chart ──
-  document.getElementById("mainChartTitle").textContent = `Daily ${fLabels[fm.idx]}${fm.unit?' ('+fm.unit+')':''}`;
-  const labels = dates.map(d=>d.slice(5));
-  const rgb = hexToRgb(fm.color);
+  const granNote = isDaily
+    ? (fm.idx===1 ? ' · 每日(广告来源)' : ' · 每日')
+    : ' · 月度 (salesperson Final Data)';
+  document.getElementById("mainChartTitle").textContent =
+    `${isDaily?'Daily':'Monthly'} ${fLabels[fm.idx]}${fm.unit?' ('+fm.unit+')':''}${granNote}`;
   if(chartMain) chartMain.destroy();
   chartMain = new Chart(document.getElementById("chartDailyMain"),{
-    type: fm.type,
+    type: chartType,
     data:{ labels, datasets:[{
       label: fLabels[fm.idx],
       data: mainVals,
       borderColor: fm.color,
-      backgroundColor: fm.type==="line" ? `rgba(${rgb},.08)` : `rgba(${rgb},.5)`,
-      borderWidth: fm.type==="line" ? 1.5 : 1,
+      backgroundColor: chartType==="line" ? `rgba(${rgb},.08)` : `rgba(${rgb},.5)`,
+      borderWidth: chartType==="line" ? 1.5 : 1,
+      borderRadius: chartType==="bar" && !isDaily ? 4 : 0,
       pointRadius: 0,
       tension: .3,
-      fill: fm.type==="line"
+      fill: chartType==="line"
     }]},
     options:{
       responsive:true, maintainAspectRatio:true,
-      plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#ccc",borderColor:"rgba(255,255,255,.1)",borderWidth:1,callbacks:{label:(ctx)=>` ${fm.unit?'RM ':''} ${ctx.parsed.y.toLocaleString()}`}}},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,25,55,.95)",titleColor:"#fff",bodyColor:"#ccc",borderColor:"rgba(255,255,255,.1)",borderWidth:1,callbacks:{label:(ctx)=>` ${fm.fmt(ctx.parsed.y)}`}}},
       scales:{
-        x:{ticks:{color:"#4e7499",font:{size:9},maxRotation:45},grid:{color:"rgba(255,255,255,.04)"}},
+        x:{ticks:{color:"#4e7499",font:{size: isDaily?9:13},maxRotation:45},grid:{color:"rgba(255,255,255,.04)"}},
         y:{ticks:{color:"#4e7499",font:{size:10}},grid:{color:"rgba(255,255,255,.06)"}}
       }
     }
   });
 
-  // ── By Channel breakdown (always all 10 channels, respects month filter) ──
+  // ── By Channel breakdown (authoritative monthly Final Data, respects month filter) ──
   const chTotals = DAILY_CHANNELS.map(ch=>{
     let sum=0;
-    dates.forEach(d=>{ const v=(DAILY_2026[d]||{})[ch]||[0,0,0,0,0,0]; sum+=v[fm.idx]; });
+    months.forEach(mk=>{ sum+=((MONTHLY_2026[ch]||{})[mk]||[0,0,0,0,0,0])[fm.idx]; });
     return { ch, val: parseFloat(sum.toFixed(fm.idx===0?2:0)) };
   }).sort((a,b)=>b.val-a.val);
 
